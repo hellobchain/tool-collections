@@ -1,0 +1,97 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: markitdown-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis_data:/data
+    restart: unless-stopped
+    networks:
+      - markitdown-network
+    command: redis-server --appendonly yes
+
+  celery-worker:
+    image: markitdown-api:v1.0.0
+    container_name: markitdown-worker
+    command: celery -A tasks worker --loglevel=info --concurrency=4
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - API_KEY=${API_KEY:-your-secret-api-key-change-me}
+      - ENABLE_LLM=${ENABLE_LLM:-false}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - CONVERT_TIMEOUT=${CONVERT_TIMEOUT:-120}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+    restart: unless-stopped
+    networks:
+      - markitdown-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+  celery-flower:
+    image: mher/flower
+    container_name: markitdown-flower
+    command: celery --broker=redis://redis:6379/0 flower --port=5555  # 修正：命令格式
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery-worker
+    restart: unless-stopped
+    networks:
+      - markitdown-network
+
+  markitdown-api:
+    image: markitdown-api:v1.0.0
+    container_name: markitdown-api
+    ports:
+      - "8001:8001"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - API_KEY=${API_KEY:-your-secret-api-key-change-me}
+      - RATE_LIMIT=${RATE_LIMIT:-10/minute}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-50}
+      - ENABLE_LLM=${ENABLE_LLM:-false}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - CONVERT_TIMEOUT=${CONVERT_TIMEOUT:-120}
+    volumes:
+      - ./logs:/app/logs
+    depends_on:
+      - redis
+      - celery-worker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - markitdown-network
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+
+networks:
+  markitdown-network:
+    driver: bridge

@@ -1,0 +1,9 @@
+# docker-compose.prod.yml
+services:
+  docling-service:
+    image: docling-service:v1.0.0
+    ports:
+      - "5001:5001"
+    environment:
+      - WORKERS=4
+      - MAX_FILE_SIZE=104857600  # 100MB
