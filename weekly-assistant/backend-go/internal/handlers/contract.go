@@ -12,13 +12,10 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
 
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
@@ -546,7 +543,75 @@ const (
 )
 
 func oleSecID(data []byte, offset int) int {
-	return int(uint32(data[offset]) | uint32(data[offset+1])<<8 | uint32(data[offset+2])<<16 | uint32(data[offset+3])<<24)
+	u := uint32(data[offset]) | uint32(data[offset+1])<<8 | uint32(data[offset+2])<<16 | uint32(data[offset+3])<<24
+	return int(int32(u))
+}
+
+func hasRootEntry(dirData []byte) bool {
+	if len(dirData) < 128 {
+		return false
+	}
+	rootName := []byte{'R', 0, 'o', 0, 'o', 0, 't', 0, ' ', 0, 'E', 0, 'n', 0, 't', 0, 'r', 0, 'y', 0}
+	for i := 0; i < min(10, len(dirData)-20); i += 128 {
+		match := true
+		for j := 0; j < len(rootName); j++ {
+			if dirData[i+j] != rootName[j] {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *oleReader) findDirectoryByContent(sat []int) []byte {
+	// Scan all sector chains for one that starts with "Root Entry"
+	visited := make([]bool, r.secCnt)
+	for start := 0; start < r.secCnt; start++ {
+		if visited[start] || sat[start] == -1 || sat[start] == -3 || sat[start] == -4 {
+			continue
+		}
+		// Read the first sector of this chain
+		sec := r.sector(start)
+		if sec == nil {
+			continue
+		}
+		if hasRootEntry(sec) {
+			// This chain is the directory — read all sectors in it
+			var allSectors []byte
+			sid := start
+			for sid >= 0 && sid != ole2EndSec && sid < r.secCnt {
+				if sid >= len(visited) || visited[sid] {
+					break
+				}
+				visited[sid] = true
+				sec := r.sector(sid)
+				if sec == nil {
+					break
+				}
+				allSectors = append(allSectors, sec...)
+				sid = sat[sid]
+			}
+			return allSectors
+		}
+		// Mark this chain as visited
+		sid := start
+		for sid >= 0 && sid != ole2EndSec && sid < r.secCnt {
+			visited[sid] = true
+			sid = sat[sid]
+		}
+	}
+	return nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func (r *oleReader) sector(secID int) []byte {
@@ -562,8 +627,11 @@ func (r *oleReader) readSAT() []int {
 	var secIDs []int
 	for i := 0; i < 109; i++ {
 		sid := oleSecID(r.data, 76+i*4)
-		if sid == ole2FreeSec || sid == 0 {
+		if sid == ole2FreeSec {
 			continue
+		}
+		if sid == ole2EndSec {
+			break
 		}
 		secIDs = append(secIDs, sid)
 	}
@@ -576,13 +644,13 @@ func (r *oleReader) readSAT() []int {
 			break
 		}
 		for j := 0; j < (r.secSize/4)-1; j++ {
-			sid := int(uint32(sec[j*4]) | uint32(sec[j*4+1])<<8 | uint32(sec[j*4+2])<<16 | uint32(sec[j*4+3])<<24)
+			sid := oleSecID(sec, j*4)
 			if sid == ole2EndSec || sid == ole2FreeSec {
 				break
 			}
 			secIDs = append(secIDs, sid)
 		}
-		nextDif = int(uint32(sec[r.secSize-4]) | uint32(sec[r.secSize-3])<<8 | uint32(sec[r.secSize-2])<<16 | uint32(sec[r.secSize-1])<<24)
+		nextDif = oleSecID(sec, r.secSize-4)
 	}
 
 	// Build SAT: read each FAT sector
@@ -594,7 +662,7 @@ func (r *oleReader) readSAT() []int {
 			break
 		}
 		for j := 0; j < r.secSize/4 && idx < r.secCnt; j++ {
-			sat[idx] = int(uint32(sec[j*4]) | uint32(sec[j*4+1])<<8 | uint32(sec[j*4+2])<<16 | uint32(sec[j*4+3])<<24)
+			sat[idx] = oleSecID(sec, j*4)
 			idx++
 		}
 	}
@@ -602,6 +670,36 @@ func (r *oleReader) readSAT() []int {
 }
 
 func (r *oleReader) readStreamData(startSecID, size int, sat []int) []byte {
+	if startSecID < 0 || size <= 0 {
+		return nil
+	}
+	// Mini Stream cutoff is at header offset 32
+	miniCutoff := int(uint32(r.data[32]) | uint32(r.data[33])<<8 | uint32(r.data[34])<<16 | uint32(r.data[35])<<24)
+	if miniCutoff == 0 {
+		miniCutoff = 4096 // default
+	}
+
+	// If stream size < mini cutoff, use Mini Stream (Root Entry data)
+	if size < miniCutoff {
+		// Find Root Entry and read its data as Mini Stream
+		satCopy := sat
+		entries := r.readDirEntries(satCopy)
+		for _, e := range entries {
+			if e.name == "Root Entry" && e.startSec >= 0 && e.size > 0 {
+				mData := r.readFromSectors(e.startSec, e.size, sat)
+				if len(mData) > 0 && startSecID*64+size <= len(mData) {
+					// In Mini Stream, startSecID is a mini-sector index (64 bytes each)
+					start := startSecID * 64
+					return mData[start : start+size]
+				}
+				break
+			}
+		}
+	}
+	return r.readFromSectors(startSecID, size, sat)
+}
+
+func (r *oleReader) readFromSectors(startSecID, size int, sat []int) []byte {
 	if startSecID < 0 || size <= 0 {
 		return nil
 	}
@@ -618,7 +716,7 @@ func (r *oleReader) readStreamData(startSecID, size int, sat []int) []byte {
 		} else {
 			out = append(out, sec[:remain]...)
 		}
-		if sid >= len(sat) {
+		if sid < 0 || sid >= len(sat) {
 			break
 		}
 		sid = sat[sid]
@@ -635,11 +733,16 @@ type oleDirEntry struct {
 }
 
 func (r *oleReader) readDirEntries(sat []int) []oleDirEntry {
-	dirSecID := oleSecID(r.data, 30)
-	if dirSecID < 0 {
-		return nil
+	// Try reading directory from the standard offset (28 in OLE2 header)
+	dirSecID := oleSecID(r.data, 28)
+	dirData := r.readStreamData(dirSecID, r.secSize*100, sat)
+
+	// Fallback: some Word-created .doc files put the directory at the DIFAT sector
+	// or at a chain that starts with "Root Entry"
+	if len(dirData) < 128 || !hasRootEntry(dirData) {
+		// Try searching all valid chains for Root Entry
+		dirData = r.findDirectoryByContent(sat)
 	}
-	dirData := r.readStreamData(dirSecID, r.secSize*100, sat) // read enough for directory
 	if len(dirData) == 0 {
 		return nil
 	}
@@ -745,104 +848,49 @@ func collectOLE2Streams(data []byte) []byte {
 		return nil
 	}
 	var combined []byte
+	// Prioritize WordDocument stream
 	for _, e := range entries {
-		if e.objType != 2 || e.size <= 0 || e.startSec < 0 {
-			continue
+		if e.objType == 2 && e.name == "WordDocument" && e.size > 0 && e.startSec >= 0 {
+			d := rd.readStreamData(e.startSec, e.size, sat)
+			if len(d) > 0 {
+				combined = append(combined, d...)
+			}
+			break
 		}
-		d := rd.readStreamData(e.startSec, e.size, sat)
-		if len(d) > 0 {
-			combined = append(combined, d...)
+	}
+	// Then add other streams
+	for _, e := range entries {
+		if e.objType == 2 && e.name != "WordDocument" && e.size > 0 && e.startSec >= 0 {
+			d := rd.readStreamData(e.startSec, e.size, sat)
+			if len(d) > 0 {
+				combined = append(combined, d...)
+			}
 		}
 	}
 	return combined
 }
 
-// tryDecode tries GBK first (most common for Chinese .doc), then UTF-16LE
+// tryDecode scans data as UTF-16LE, collects ALL viable segments >= 6 bytes,
+// concatenates in document order. Catches table cells (separated by 0x07)
+// which are tiny 3-5 char segments.
 func tryDecode(data []byte) string {
-	// ---------- GBK first ----------
-	// GBK is the dominant encoding for Chinese .doc files.
-	// Binary data rarely forms valid GBK sequences, so the decoder naturally
-	// separates Chinese text (clean GBK) from binary garbage (replacement chars).
-	if t := tryDecodeGBK(data); t != "" {
-		return t
-	}
-
-	// ---------- UTF-16LE fallback ----------
-	return tryDecodeUTF16LE(data)
-}
-
-// tryDecodeGBK decodes the entire file as GBK, finds the longest run of
-// valid decoded characters (no replacement U+FFFD).
-func tryDecodeGBK(data []byte) string {
-	decoder := simplifiedchinese.GBK.NewDecoder()
-	decoded, _, err := transform.Bytes(decoder, data)
-	if err != nil || len(decoded) == 0 {
-		return ""
-	}
-
-	// Find the longest run without replacement characters (U+FFFD)
-	longestStart, longestEnd := 0, 0
-	curStart := -1
-
-	for i := 0; i < len(decoded); {
-		r, size := utf8.DecodeRune(decoded[i:])
-		if r == utf8.RuneError && size <= 1 {
-			// Invalid UTF-8 byte (shouldn't happen with GBK decoder but be safe)
-			if curStart >= 0 {
-				if i-curStart > longestEnd-longestStart {
-					longestStart = curStart
-					longestEnd = i
-				}
-				curStart = -1
-			}
-			i++
-			continue
-		}
-		if r == 0xFFFD { // replacement character = invalid GBK byte
-			if curStart >= 0 {
-				if i-curStart > longestEnd-longestStart {
-					longestStart = curStart
-					longestEnd = i
-				}
-				curStart = -1
-			}
-		} else {
-			if curStart < 0 {
-				curStart = i
-			}
-		}
-		i += size
-	}
-	if curStart >= 0 && len(decoded)-curStart > longestEnd-longestStart {
-		longestStart = curStart
-		longestEnd = len(decoded)
-	}
-
-	if longestEnd-longestStart > 20 {
-		return string(decoded[longestStart:longestEnd])
-	}
-	return ""
-}
-
-// tryDecodeUTF16LE scans raw bytes as UTF-16LE, collects ALL viable segments,
-// then concatenates them in document order (any >= 10 bytes).
-// Table cells separated by 0x07 are each their own segment and all are kept.
-func tryDecodeUTF16LE(data []byte) string {
 	type seg struct{ start, end int }
-
-	const minSeg = 10 // bytes (5 UTF-16 chars)
+	const minSeg = 6
 	var segs []seg
 	cur := -1
 
 	for i := 0; i < len(data)-1; i += 2 {
 		r := rune(data[i]) | rune(data[i+1])<<8
 		if isTextRune(r) {
-			if cur < 0 {
-				cur = i
-			}
+			if cur < 0 { cur = i }
 		} else {
 			if cur >= 0 && i-cur >= minSeg {
-				segs = append(segs, seg{cur, i})
+				// Merge with previous if gap is 1 char (0x07 cell mark)
+				if len(segs) > 0 && cur-segs[len(segs)-1].end <= 4 {
+					segs[len(segs)-1].end = i
+				} else {
+					segs = append(segs, seg{cur, i})
+				}
 			}
 			cur = -1
 		}
@@ -850,12 +898,8 @@ func tryDecodeUTF16LE(data []byte) string {
 	if cur >= 0 && len(data)-cur >= minSeg {
 		segs = append(segs, seg{cur, len(data)})
 	}
+	if len(segs) == 0 { return "" }
 
-	if len(segs) == 0 {
-		return ""
-	}
-
-	// Concatenate all segments in document order (preserves table structure)
 	var buf strings.Builder
 	for _, s := range segs {
 		raw := data[s.start:s.end]
@@ -869,14 +913,9 @@ func tryDecodeUTF16LE(data []byte) string {
 		}
 		buf.WriteRune('\n')
 	}
-	result := strings.TrimSpace(buf.String())
-	if len(result) > 10 {
-		return result
-	}
-	return ""
+	return strings.TrimSpace(buf.String())
 }
 
-// isTextRune returns true if r is a likely text character in UTF-16LE
 func isTextRune(r rune) bool {
 	switch {
 	case r >= 0x20 && r <= 0x7E: // ASCII printable
