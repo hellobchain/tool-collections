@@ -1,8 +1,8 @@
 <template>
   <div class="login-container">
     <div class="login-box">
-      <h2>📋 周报AI助手</h2>
-      <p class="subtitle">用碎片记录，用AI生成</p>
+      <h2>🗄️🔮🤖 百宝箱</h2>
+      <p class="subtitle">你的随身百宝箱</p>
       <el-form @submit.native.prevent="handleLogin">
         <el-form-item>
           <el-input v-model="username" name="username" placeholder="用户名" prefix-icon="el-icon-user" size="large" />
