@@ -138,7 +138,7 @@ export default {
         this.resultBlob = res.data
         const nameParts = this.selectedFile.name.split('.')
         const baseName = nameParts.slice(0, -1).join('.') || this.selectedFile.name
-        const extMap = { md: 'md', docx: 'docx', pdf: 'pdf', html: 'html', txt: 'txt' }
+        const extMap = { md: 'md', json: 'json', html: 'html', text: 'txt' }
         this.resultFileName = `${baseName}.${extMap[this.toFormats] || this.toFormats}`
         this.$message.success('转换成功')
       } catch (err) {
