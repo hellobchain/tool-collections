@@ -266,7 +266,7 @@ func GenerateDraft(c *gin.Context) {
 	userID := middleware.GetUserID(c)
 	llm := services.NewLLMService()
 	systemPrompt := ctx.template.SystemPrompt + buildSkillsContext(userID)
-	draft, err := llm.GenerateDraftWithPrompt(systemPrompt, ctx.userPrompt)
+	draft, err := llm.GenerateLlmWithPrompt(systemPrompt, ctx.userPrompt)
 	if err != nil {
 		utils.ErrorWithMsg(c, utils.CodeServerError, "生成草稿失败")
 		return

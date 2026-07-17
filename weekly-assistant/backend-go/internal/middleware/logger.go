@@ -33,7 +33,9 @@ func RequestLogger() gin.HandlerFunc {
 		method := c.Request.Method
 		path := c.Request.URL.Path
 		query := c.Request.URL.RawQuery
+		contentType := c.Request.Header.Get("Content-Type")
 
+		// 记录请求路径
 		if method == "GET" {
 			if query != "" {
 				log.Printf("[%s] %s?%s", method, path, query)
@@ -44,6 +46,17 @@ func RequestLogger() gin.HandlerFunc {
 			return
 		}
 
+		// 判断是否为文件上传（multipart/form-data）
+		isMultipart := strings.HasPrefix(contentType, "multipart/form-data")
+
+		// 如果是文件上传，只记录路径，不读取body
+		if isMultipart {
+			log.Printf("[%s] %s (file upload, body omitted)", method, path)
+			c.Next()
+			return
+		}
+
+		// 非文件上传，读取并记录body
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		if err != nil {
 			log.Printf("[%s] %s - read body error: %v", method, path, err)

@@ -155,8 +155,8 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 	}
 }
 
-// GenerateDraftWithPrompt 支持自定义提示词
-func (s *LLMService) GenerateDraftWithPrompt(systemPrompt, userPrompt string) (string, error) {
+// GenerateLlmWithPrompt 支持自定义提示词
+func (s *LLMService) GenerateLlmWithPrompt(systemPrompt, userPrompt string) (string, error) {
 	reqBody := ChatRequest{
 		Model: s.model,
 		Messages: []ChatMessage{

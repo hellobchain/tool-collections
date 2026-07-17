@@ -38,6 +38,9 @@ func InitDB() {
 		&models.Skill{},
 		&models.GitProject{},
 		&models.Summary{},
+		&models.ContractFile{},
+		&models.ContractReview{},
+		&models.ContractReviewItem{},
 	)
 	if err != nil {
 		log.Fatal("Failed to migrate database:", err)

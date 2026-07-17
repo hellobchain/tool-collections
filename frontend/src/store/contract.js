@@ -145,7 +145,7 @@ export default {
     async uploadFile({ commit }, { file, onProgress }) {
       const res = await contractApi.uploadContract(file, onProgress)
       const { data } = res.data
-      commit('ADD_UPLOADED_FILE', { ...data, status: 'parsed', progress: 100 })
+      commit('ADD_UPLOADED_FILE', { ...data, file_uuid: data.file_uuid || '', status: 'parsed', progress: 100 })
       return data
     },
     async deleteFile({ commit }, fileId) {

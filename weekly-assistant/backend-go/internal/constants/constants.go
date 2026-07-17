@@ -1,5 +1,12 @@
 package constants
 
+const (
+	LOCAL_SAVE_TYPE      = "local"
+	OSS_S3_SAVE_TYPE     = "oss_s3"
+	OSS_MINIO_SAVE_TYPE  = "oss_minio"
+	OSS_ALIYUN_SAVE_TYPE = "oss_aliyun"
+)
+
 // ============ 分页 ============
 const (
 	DefaultPage      = 1

@@ -1,5 +1,4 @@
 @echo off
-:: 65001 = UTF-8，936 = GBK，按需切换
 chcp 65001 >nul
 @echo off
 setlocal enabledelayedexpansion

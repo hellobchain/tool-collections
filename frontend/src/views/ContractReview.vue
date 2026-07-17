@@ -1,7 +1,7 @@
 <template>
   <div class="contract-review">
     <div class="page-header">
-      <h2>合同智能审查</h2>
+      <h2>⚡️ 合同智能审查</h2>
       <p class="page-desc">上传合同文档，配置审查参数，自动输出审查报告</p>
     </div>
 
@@ -59,36 +59,39 @@
 
     <!-- Step 2: Configure -->
     <div v-show="activeStep === 1" class="step-content">
+      <div class="config-hint">📌 请完成以下配置，系统将据此匹配对应的审查规则集</div>
+
       <el-card class="config-card">
-        <el-form label-width="120px">
+        <el-form label-width="100px">
           <el-form-item label="合同类型">
             <el-cascader
               v-model="configType"
               :options="contractTypes"
               :props="{ expandTrigger: 'hover', label: 'label', value: 'value' }"
-              placeholder="选择合同类型"
+              placeholder="选择合同大类及具体子类"
               clearable
-              style="width:360px"
+              style="width:380px"
             />
             <el-input v-if="configType && configType[0]==='other'" v-model="customType" placeholder="请输入自定义类型" style="width:240px;margin-left:8px" size="small" />
           </el-form-item>
 
           <el-form-item label="审查立场">
             <el-radio-group v-model="selectedPosition">
-              <div v-for="p in positions" :key="p.value" class="position-item">
+              <div v-for="p in positions" :key="p.value" class="position-block">
                 <el-radio :label="p.value" border>{{ p.label }}</el-radio>
-                <div class="position-desc">
-                  <span class="position-focus">{{ p.focus }}</span>
-                </div>
+                <div class="position-focus">{{ p.focus }}</div>
               </div>
             </el-radio-group>
           </el-form-item>
 
           <el-form-item label="审查标准">
             <el-checkbox-group v-model="selectedStandards">
-              <div v-for="s in standards" :key="s.value" class="standard-item">
+              <div v-for="s in standards" :key="s.value" class="standard-block">
                 <el-checkbox :label="s.value" border>{{ s.label }}</el-checkbox>
-                <div class="standard-desc">{{ s.desc }}</div>
+                <div class="standard-meta">
+                  <span class="standard-desc">{{ s.desc }}</span>
+                  <el-tag size="mini" type="primary" effect="plain">{{ standardRuleCount(s.value) }}条规则</el-tag>
+                </div>
               </div>
             </el-checkbox-group>
           </el-form-item>
@@ -96,20 +99,21 @@
       </el-card>
 
       <el-card class="summary-card">
-        <div slot="header">配置摘要</div>
-        <div class="summary-body">
-          <el-row :gutter="16">
-            <el-col :span="8"><div class="summary-item"><label>合同类型</label><span>{{ configTypeLabel || '未选择' }}</span></div></el-col>
-            <el-col :span="8"><div class="summary-item"><label>审查立场</label><span>{{ positionLabel || '未选择' }}</span></div></el-col>
-            <el-col :span="8"><div class="summary-item"><label>审查标准</label><span>{{ standardsLabel || '未选择' }}</span></div></el-col>
-          </el-row>
+        <div slot="header">
+          <i class="el-icon-s-order"></i> 配置摘要
+          <span class="summary-tag" v-if="canProceedStep2">将执行 <em>{{ estimatedRuleCount }}</em> 条审查规则</span>
         </div>
+        <el-row :gutter="16">
+          <el-col :span="8"><div class="summary-item"><label>合同类型</label><span class="sv">{{ configTypeLabel || '未选择' }}</span></div></el-col>
+          <el-col :span="8"><div class="summary-item"><label>审查立场</label><span class="sv">{{ positionLabel || '未选择' }}</span></div></el-col>
+          <el-col :span="8"><div class="summary-item"><label>审查标准</label><span class="sv">{{ standardsLabel || '未选择' }}</span></div></el-col>
+        </el-row>
       </el-card>
 
       <div class="step-actions">
         <el-button @click="activeStep=0">上一步</el-button>
         <el-button :disabled="!canProceedStep2" type="primary" :loading="reviewing" @click="handleStartReview">
-          {{ reviewing ? '审查中...' : '开始审查' }}
+          {{ reviewing ? '审查中...' : '开始审查 →' }}
         </el-button>
       </div>
     </div>
@@ -152,7 +156,7 @@
               <span>审查进度：{{ reviewProgress ? reviewProgress.percent || 0 : 0 }}%</span>
               <span v-if="reviewProgress && reviewProgress.current_rule" class="current-rule">当前：{{ reviewProgress.current_rule }}</span>
             </div>
-            <el-progress :percentage="reviewProgress ? reviewProgress.percent || 0 : 0" :status="reviewProgress && reviewProgress.percent >= 100 ? 'success' : ''" />
+            <el-progress :percentage="reviewProgress ? reviewProgress.percent || 0 : 0" :status="progressStatus" />
             <div v-if="reviewProgress" class="progress-risk">
               <span>已发现：<em style="color:#f56c6c">高 {{ reviewProgress.high_risk || 0 }}</em> / <em style="color:#e6a23c">中 {{ reviewProgress.medium_risk || 0 }}</em> / <em style="color:#409eff">低 {{ reviewProgress.low_risk || 0 }}</em></span>
             </div>
@@ -227,6 +231,8 @@ export default {
       activeStep: 0,
       configType: [],
       customType: '',
+      selectedPosition: 'party_a',
+      selectedStandards: [],
       pollTimer: null,
       filterLevel: '',
       searchKeyword: '',
@@ -234,18 +240,21 @@ export default {
     }
   },
   computed: {
-    ...mapState('contract', ['uploadedFiles', 'contractTypes', 'positions', 'standards', 'selectedPosition', 'selectedStandards', 'reviewing', 'reviewProgress', 'report', 'contractText', 'riskLevelMap']),
+    ...mapState('contract', ['uploadedFiles', 'contractTypes', 'positions', 'standards', 'reviewing', 'reviewProgress', 'report', 'contractText', 'riskLevelMap']),
     canProceedStep1() {
       return this.uploadedFiles.some(f => f.status === 'parsed')
     },
     canProceedStep2() {
-      return this.configType && this.configType.length && this.selectedPosition && this.selectedStandards.length
+      const typeOk = this.configType && this.configType.length > 0
+      return typeOk && !!this.selectedPosition && this.selectedStandards.length > 0
     },
     configTypeLabel() {
       if (!this.configType || !this.configType.length) return ''
       const cat = this.contractTypes.find(c => c.value === this.configType[0])
       if (!cat) return this.configType[0]
-      if (this.configType.length === 1) return cat.label
+      if (this.configType.length === 1 || this.configType[0] === 'other') {
+        return this.configType[0] === 'other' && this.customType ? this.customType : cat.label
+      }
       const sub = cat.children.find(c => c.value === this.configType[1])
       return sub ? `${cat.label} - ${sub.label}` : cat.label
     },
@@ -255,6 +264,12 @@ export default {
     },
     standardsLabel() {
       return this.selectedStandards.map(v => { const s = this.standards.find(st => st.value === v); return s ? s.label : v }).join('、') || ''
+    },
+    estimatedRuleCount() {
+      const ruleMap = { internal: 12, legal: 8, industry: 5, custom: 6 }
+      let count = 0
+      this.selectedStandards.forEach(s => { count += ruleMap[s] || 0 })
+      return count
     },
     riskCounts() {
       if (!this.report) return { high: 0, medium: 0, low: 0, pass: 0 }
@@ -287,6 +302,9 @@ export default {
       const order = { high: 0, medium: 1, low: 2, pass: 3 }
       return [...result].sort((a, b) => (order[a.level] ?? 9) - (order[b.level] ?? 9))
     },
+    progressStatus() {
+      return this.reviewProgress && this.reviewProgress.percent >= 100 ? 'success' : undefined
+    },
     highlightedText() {
       if (!this.contractText) return ''
       if (!this.highlightText) return this.escapeHtml(this.contractText)
@@ -307,7 +325,6 @@ export default {
     }
   },
   mounted() {
-    this.$store.commit('contract/SET_SELECTED_POSITION', 'party_a')
   },
   beforeDestroy() {
     this.stopPolling()
@@ -343,12 +360,12 @@ export default {
           id: serverFile.id,
           name: serverFile.name || rawFile.name,
           size: serverFile.size || this.formatSize(rawFile.size),
+          file_uuid: serverFile.file_uuid || '',
           status: 'parsed'
         })
         this.$message.success(`${rawFile.name} 上传解析完成`)
       } catch (e) {
         this.$store.commit('contract/UPDATE_FILE_STATUS', { id: tempId, status: 'failed', msg: e.message || '上传失败' })
-        this.$message.error(`${rawFile.name} 上传失败`)
       }
       this.$refs.upload.clearFiles()
     },
@@ -360,13 +377,23 @@ export default {
     previewFile(file) {
       this.$store.dispatch('contract/fetchContractText', file.id)
     },
+    standardRuleCount(val) {
+      const ruleMap = { internal: 12, legal: 8, industry: 5, custom: 6 }
+      return ruleMap[val] || 0
+    },
     async handleStartReview() {
+      this.$store.commit('contract/SET_SELECTED_TYPE', this.configType[0] || '')
+      this.$store.commit('contract/SET_SELECTED_SUB_TYPE', this.configType[1] || '')
+      this.$store.commit('contract/SET_SELECTED_POSITION', this.selectedPosition)
+      this.$store.commit('contract/SET_SELECTED_STANDARDS', this.selectedStandards)
+      if (this.configType[0] === 'other') {
+        this.$store.commit('contract/SET_CUSTOM_TYPE', this.customType)
+      }
       try {
         const { taskId } = await this.$store.dispatch('contract/startReview')
         this.activeStep = 2
         this.startPolling()
       } catch (e) {
-        this.$message.error('启动审查失败：' + (e.message || '未知错误'))
       }
     },
     startPolling() {
@@ -385,7 +412,7 @@ export default {
           this.stopPolling()
           this.$store.commit('contract/SET_REVIEWING', false)
         }
-      }, 2000)
+      }, 30000)
     },
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }
@@ -436,8 +463,11 @@ export default {
     },
     handleBackToUpload() {
       this.$store.commit('contract/RESET_REVIEW')
-      this.uploadedFiles.splice(0)
       this.activeStep = 0
+      this.configType = []
+      this.customType = ''
+      this.selectedPosition = 'party_a'
+      this.selectedStandards = []
       this.filterLevel = ''
       this.searchKeyword = ''
       this.highlightText = ''
@@ -491,11 +521,21 @@ export default {
 .file-name { color: #333; }
 .file-size { color: #999; font-size: 12px; }
 .file-status { display: flex; align-items: center; gap: 8px; }
+.config-hint { font-size: 14px; color: #606266; margin-bottom: 16px; padding: 10px 16px; background: #ecf5ff; border-radius: 4px; border-left: 4px solid #409eff; }
 .config-card { margin-bottom: 12px; }
-.position-item, .standard-item { margin-bottom: 8px; }
-.position-desc, .standard-desc { font-size: 12px; color: #999; margin: 4px 0 4px 24px; }
+.position-block { margin-bottom: 10px; }
+.position-block .el-radio.is-bordered { margin-bottom: 6px; }
+.position-focus { font-size: 12px; color: #909399; line-height: 1.5; padding: 4px 0 2px 28px; }
+.standard-block { margin-bottom: 10px; }
+.standard-block .el-checkbox.is-bordered { margin-bottom: 6px; }
+.standard-meta { display: flex; align-items: center; gap: 10px; padding: 2px 0 2px 28px; }
+.standard-desc { font-size: 12px; color: #909399; }
 .summary-card { margin-bottom: 12px; }
-.summary-item label { display: block; font-size: 12px; color: #999; margin-bottom: 4px; }
+.summary-card .summary-tag { float: right; font-size: 13px; color: #67c23a; font-weight: 400; }
+.summary-card .summary-tag em { font-size: 18px; font-weight: 700; font-style: normal; }
+.summary-item { text-align: center; padding: 8px 0; }
+.summary-item label { display: block; font-size: 12px; color: #909399; margin-bottom: 4px; }
+.summary-item .sv { font-size: 14px; color: #333; font-weight: 600; }
 .step-actions { display: flex; gap: 12px; justify-content: center; padding: 16px 0; }
 .report-layout { display: flex; gap: 16px; }
 .report-main { flex: 1; min-width: 0; }

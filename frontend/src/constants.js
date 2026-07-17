@@ -37,3 +37,6 @@ export const SUCCESS_CODE = 0
 export const NOT_FOUND_CODE = 404
 export const UNAUTHORIZED_CODE = 401
 export const YEAR_RANGE = 10
+
+
+export const API_PREX = '/weekly-assistant'

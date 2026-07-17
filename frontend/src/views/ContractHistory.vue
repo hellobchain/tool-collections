@@ -1,12 +1,12 @@
 <template>
   <div class="contract-history">
     <div class="page-header">
-      <h2>历史审查记录</h2>
+      <h2>📂 历史审查记录</h2>
     </div>
 
     <el-card class="filter-card">
       <div class="filter-bar">
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" size="small" value-format="yyyy-MM-dd" style="width:260px" />
+        <el-date-picker v-model="dateRange" type="daterange" range-separator="~" start-placeholder="开始日期" end-placeholder="结束日期" size="small" value-format="yyyy-MM-dd" style="width:260px" />
         <el-select v-model="filterType" placeholder="合同类型" size="small" clearable style="width:150px">
           <el-option v-for="t in flatTypes" :key="t.value" :label="t.label" :value="t.value" />
         </el-select>

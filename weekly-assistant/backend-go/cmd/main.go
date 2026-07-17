@@ -94,6 +94,18 @@ func main() {
 		apiGroup.POST("/skills", handlers.CreateSkill)
 		apiGroup.PUT("/skills/:id", handlers.UpdateSkill)
 		apiGroup.DELETE("/skills/:id", handlers.DeleteSkill)
+
+		// Contract Review
+		apiGroup.POST("/contract/v1/upload", handlers.UploadContract)
+		apiGroup.DELETE("/contract/v1/files/:id", handlers.DeleteContractFile)
+		apiGroup.GET("/contract/v1/files/:id/text", handlers.GetContractText)
+		apiGroup.POST("/contract/v1/review", handlers.StartReview)
+		apiGroup.GET("/contract/v1/review/:taskId/progress", handlers.GetReviewProgress)
+		apiGroup.GET("/contract/v1/report/:reportId", handlers.GetReviewReport)
+		apiGroup.PUT("/contract/v1/report/:reportId/items/:itemId", handlers.UpdateReviewItem)
+		apiGroup.GET("/contract/v1/history", handlers.GetHistory)
+		apiGroup.DELETE("/contract/v1/history/:reportId", handlers.DeleteHistory)
+		apiGroup.GET("/contract/v1/report/:reportId/export", handlers.ExportReport)
 	}
 
 	// 启动服务

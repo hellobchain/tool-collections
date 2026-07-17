@@ -27,6 +27,15 @@ type Config struct {
 	DeepSeekModel     string
 	DeepSeekMaxTokens int
 
+	SaveType       string
+	LocalSavePath  string
+	MinioEndpoint  string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioBucket    string
+	MinioRegion    string
+	MinioIsS3      bool
+
 	Port int
 
 	InitUser InitUser
@@ -61,6 +70,7 @@ func LoadConfig() {
 
 	dbLogLevel, _ := strconv.Atoi(getEnv("DB_LOG_LEVEL", "1"))
 
+	minioIsS3, _ := strconv.ParseBool(getEnv("MINIO_IS_S3", "false"))
 	AppConfig = &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     dbPort,
@@ -76,6 +86,15 @@ func LoadConfig() {
 		DeepSeekBaseURL:   getEnv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
 		DeepSeekModel:     getEnv("DEEPSEEK_MODEL", "deepseek-chat"),
 		DeepSeekMaxTokens: maxTokens,
+
+		SaveType:       getEnv("SAVE_TYPE", "local"),
+		LocalSavePath:  getEnv("LOCAL_SAVE_PATH", "/data/contracts"),
+		MinioEndpoint:  getEnv("MINIO_ENDPOINT", "localhost:9000"),
+		MinioAccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+		MinioSecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+		MinioBucket:    getEnv("MINIO_BUCKET", "contracts"),
+		MinioRegion:    getEnv("MINIO_REGION", "us-east-1"),
+		MinioIsS3:      minioIsS3,
 
 		Port: port,
 	}
