@@ -12,10 +12,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/transform"
 
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
@@ -675,23 +678,19 @@ func decodeUTF16LE(b []byte) string {
 	for i := 0; i < len(b)-1; i += 2 {
 		low := uint16(b[i])
 		high := uint16(b[i+1])
-		if low == 0 && high == 0 {
+		r := rune(high)<<8 | rune(low)
+		if r == 0 {
 			break
 		}
-		if high == 0 && low >= 0x20 && low <= 0x7E {
-			runes = append(runes, rune(low))
-		} else if high == 0 && low >= 0x80 {
-			runes = append(runes, rune(low))
-		} else {
-			r := rune(high)<<16 | rune(low)
-			runes = append(runes, r)
-		}
+		runes = append(runes, r)
 	}
 	return string(runes)
 }
 
+// ============== .doc text extraction ==============
+
 func extractDocText(data []byte) string {
-	if len(data) < 512 {
+	if len(data) < 64 {
 		return extractPrintableStrings(data)
 	}
 
@@ -700,99 +699,218 @@ func extractDocText(data []byte) string {
 		return extractDocxText(data)
 	}
 
-	// Verify OLE2 magic
-	if data[0] != 0xD0 || data[1] != 0xCF || data[2] != 0x11 || data[3] != 0xE0 ||
-		data[4] != 0xA1 || data[5] != 0xB1 || data[6] != 0x1A || data[7] != 0xE1 {
-		return extractPrintableStrings(data)
-	}
-
-	secPower := int(data[30]) // typically 9 = 512 bytes
-	secSize := 1 << uint(secPower)
-	if secSize < 64 || secSize > 4096 {
-		return extractPrintableStrings(data)
-	}
-	secCnt := (len(data) + secSize - 1) / secSize
-
-	rd := &oleReader{data: data, secSize: secSize, secCnt: secCnt}
-	sat := rd.readSAT()
-	if len(sat) == 0 {
-		return extractPrintableStrings(data)
-	}
-
-	entries := rd.readDirEntries(sat)
-	if len(entries) == 0 {
-		return extractPrintableStrings(data)
-	}
-
-	var result strings.Builder
-
-	for _, e := range entries {
-		if e.objType != 2 && e.objType != 5 { // not a stream or root
-			continue
-		}
-		if e.size <= 0 || e.startSec < 0 {
-			continue
-		}
-		streamData := rd.readStreamData(e.startSec, e.size, sat)
-		if len(streamData) == 0 {
-			continue
-		}
-
-		// Extract UTF-16LE text from this stream's data
-		text := extractUTF16LEText(streamData)
-		if text != "" {
-			if result.Len() > 0 {
-				result.WriteString("\n")
+	// Strategy 1: collect all OLE2 stream data, then scan for encodings
+	if isOLE2(data) {
+		streamData := collectOLE2Streams(data)
+		if len(streamData) > 0 {
+			if t := tryDecode(streamData); t != "" {
+				return t
 			}
-			result.WriteString(text)
 		}
 	}
 
-	// If we got text from OLE2 streams, return it
-	if result.Len() > 0 {
-		return result.String()
+	// Strategy 2: scan raw file directly for UTF-16LE or GBK text
+	if t := tryDecode(data); t != "" {
+		return t
 	}
 
-	// Fallback: scan raw bytes for printable strings
 	return extractPrintableStrings(data)
 }
 
-func extractUTF16LEText(data []byte) string {
-	var result strings.Builder
-	runes := make([]rune, 0, len(data)/8)
+func isOLE2(data []byte) bool {
+	return len(data) >= 8 &&
+		data[0] == 0xD0 && data[1] == 0xCF &&
+		data[2] == 0x11 && data[3] == 0xE0 &&
+		data[4] == 0xA1 && data[5] == 0xB1 &&
+		data[6] == 0x1A && data[7] == 0xE1
+}
 
-	for i := 0; i < len(data)-1; i += 2 {
-		low := uint16(data[i])
-		high := uint16(data[i+1])
-
-		switch {
-		case high == 0 && low >= 0x20 && low <= 0x7E:
-			runes = append(runes, rune(low))
-		case high == 0 && low == 0:
-			if len(runes) >= 4 {
-				result.WriteString(string(runes))
-				result.WriteRune('\n')
-			}
-			runes = runes[:0]
-		case high == 0 && (low == 0x0D || low == 0x0A):
-			if len(runes) >= 4 {
-				result.WriteString(string(runes))
-				result.WriteRune('\n')
-			}
-			runes = runes[:0]
-		default:
-			if len(runes) >= 4 {
-				result.WriteString(string(runes))
-				result.WriteRune('\n')
-			}
-			runes = runes[:0]
+func collectOLE2Streams(data []byte) []byte {
+	if len(data) < 512 || !isOLE2(data) {
+		return nil
+	}
+	secPower := int(data[30])
+	secSize := 1 << uint(secPower)
+	if secSize < 64 || secSize > 4096 {
+		return nil
+	}
+	secCnt := (len(data) + secSize - 1) / secSize
+	rd := &oleReader{data: data, secSize: secSize, secCnt: secCnt}
+	sat := rd.readSAT()
+	if len(sat) == 0 {
+		return nil
+	}
+	entries := rd.readDirEntries(sat)
+	if len(entries) == 0 {
+		return nil
+	}
+	var combined []byte
+	for _, e := range entries {
+		if e.objType != 2 || e.size <= 0 || e.startSec < 0 {
+			continue
+		}
+		d := rd.readStreamData(e.startSec, e.size, sat)
+		if len(d) > 0 {
+			combined = append(combined, d...)
 		}
 	}
-	if len(runes) >= 4 {
-		result.WriteString(string(runes))
-	}
-	return result.String()
+	return combined
 }
+
+// tryDecode tries GBK first (most common for Chinese .doc), then UTF-16LE
+func tryDecode(data []byte) string {
+	// ---------- GBK first ----------
+	// GBK is the dominant encoding for Chinese .doc files.
+	// Binary data rarely forms valid GBK sequences, so the decoder naturally
+	// separates Chinese text (clean GBK) from binary garbage (replacement chars).
+	if t := tryDecodeGBK(data); t != "" {
+		return t
+	}
+
+	// ---------- UTF-16LE fallback ----------
+	return tryDecodeUTF16LE(data)
+}
+
+// tryDecodeGBK decodes the entire file as GBK, finds the longest run of
+// valid decoded characters (no replacement U+FFFD).
+func tryDecodeGBK(data []byte) string {
+	decoder := simplifiedchinese.GBK.NewDecoder()
+	decoded, _, err := transform.Bytes(decoder, data)
+	if err != nil || len(decoded) == 0 {
+		return ""
+	}
+
+	// Find the longest run without replacement characters (U+FFFD)
+	longestStart, longestEnd := 0, 0
+	curStart := -1
+
+	for i := 0; i < len(decoded); {
+		r, size := utf8.DecodeRune(decoded[i:])
+		if r == utf8.RuneError && size <= 1 {
+			// Invalid UTF-8 byte (shouldn't happen with GBK decoder but be safe)
+			if curStart >= 0 {
+				if i-curStart > longestEnd-longestStart {
+					longestStart = curStart
+					longestEnd = i
+				}
+				curStart = -1
+			}
+			i++
+			continue
+		}
+		if r == 0xFFFD { // replacement character = invalid GBK byte
+			if curStart >= 0 {
+				if i-curStart > longestEnd-longestStart {
+					longestStart = curStart
+					longestEnd = i
+				}
+				curStart = -1
+			}
+		} else {
+			if curStart < 0 {
+				curStart = i
+			}
+		}
+		i += size
+	}
+	if curStart >= 0 && len(decoded)-curStart > longestEnd-longestStart {
+		longestStart = curStart
+		longestEnd = len(decoded)
+	}
+
+	if longestEnd-longestStart > 20 {
+		return string(decoded[longestStart:longestEnd])
+	}
+	return ""
+}
+
+// tryDecodeUTF16LE scans raw bytes as UTF-16LE, collects ALL viable segments,
+// then concatenates them in document order (any >= 10 bytes).
+// Table cells separated by 0x07 are each their own segment and all are kept.
+func tryDecodeUTF16LE(data []byte) string {
+	type seg struct{ start, end int }
+
+	const minSeg = 10 // bytes (5 UTF-16 chars)
+	var segs []seg
+	cur := -1
+
+	for i := 0; i < len(data)-1; i += 2 {
+		r := rune(data[i]) | rune(data[i+1])<<8
+		if isTextRune(r) {
+			if cur < 0 {
+				cur = i
+			}
+		} else {
+			if cur >= 0 && i-cur >= minSeg {
+				segs = append(segs, seg{cur, i})
+			}
+			cur = -1
+		}
+	}
+	if cur >= 0 && len(data)-cur >= minSeg {
+		segs = append(segs, seg{cur, len(data)})
+	}
+
+	if len(segs) == 0 {
+		return ""
+	}
+
+	// Concatenate all segments in document order (preserves table structure)
+	var buf strings.Builder
+	for _, s := range segs {
+		raw := data[s.start:s.end]
+		for i := 0; i < len(raw)-1; i += 2 {
+			r := rune(raw[i]) | rune(raw[i+1])<<8
+			if r == 0 || r == '\r' || r == '\n' {
+				buf.WriteRune('\n')
+			} else {
+				buf.WriteRune(r)
+			}
+		}
+		buf.WriteRune('\n')
+	}
+	result := strings.TrimSpace(buf.String())
+	if len(result) > 10 {
+		return result
+	}
+	return ""
+}
+
+// isTextRune returns true if r is a likely text character in UTF-16LE
+func isTextRune(r rune) bool {
+	switch {
+	case r >= 0x20 && r <= 0x7E: // ASCII printable
+		return true
+	case r >= 0x4E00 && r <= 0x9FFF: // CJK
+		return true
+	case r >= 0x3400 && r <= 0x4DBF:
+		return true
+	case r >= 0x2E80 && r <= 0x2EFF:
+		return true
+	case r >= 0x3000 && r <= 0x303F:
+		return true
+	case r >= 0xFF00 && r <= 0xFFEF:
+		return true
+	case r >= 0x2000 && r <= 0x206F:
+		return true
+	case r >= 0xFE30 && r <= 0xFE4F:
+		return true
+	case r >= 0x00A0 && r <= 0x00FF:
+		return true
+	case r >= 0x0100 && r <= 0x024F:
+		return true
+	case r >= 0x0370 && r <= 0x03FF:
+		return true
+	case r >= 0x0400 && r <= 0x04FF:
+		return true
+	case r == 0x0A || r == 0x0D:
+		return true
+	default:
+		return false
+	}
+}
+
+
 
 func extractPrintableStrings(data []byte) string {
 	var result strings.Builder
