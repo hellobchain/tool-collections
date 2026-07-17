@@ -18,7 +18,7 @@
       >
         <i class="el-icon-upload"></i>
         <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-        <div slot="tip" class="el-upload__tip">支持常见文档格式，单文件不超过 50MB</div>
+        <div slot="tip" class="el-upload__tip">支持PDF、Word、图片等多种格式，单文件不超过 50MB</div>
       </el-upload>
     </el-card>
 
@@ -27,10 +27,9 @@
         <el-form-item label="目标格式">
           <el-select v-model="toFormats" placeholder="选择转换格式">
             <el-option label="Markdown (.md)" value="md" />
-            <el-option label="Word (.docx)" value="docx" />
-            <el-option label="PDF (.pdf)" value="pdf" />
+            <el-option label="JSON (.json)" value="json" />
             <el-option label="HTML (.html)" value="html" />
-            <el-option label="纯文本 (.txt)" value="txt" />
+            <el-option label="Text (.txt)" value="text" />
           </el-select>
         </el-form-item>
         <el-form-item label="OCR 文字识别">
@@ -70,14 +69,49 @@ export default {
       doOcr: true,
       converting: false,
       resultBlob: null,
-      resultFileName: ''
+      resultFileName: '',
+          allowedTypes: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/bmp',
+      'image/webp'
+    ],
+      allowedExtensions: ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']
     }
   },
   methods: {
     handleFileChange(file) {
+      // 校验文件类型
+      const isValidType = this.checkFileType(file);
+      if (!isValidType) {
+        this.$message.error('仅支持 PDF、Word 文档和图片格式！');
+        // 移除不符合的文件
+        this.fileList = [];
+        this.$refs.upload.clearFiles();
+        return;
+      }
+      // 校验文件大小（50MB）
+      if (file.size > 50 * 1024 * 1024) {
+        this.$message.error('文件大小不能超过 50MB！');
+        this.fileList = [];
+        this.$refs.upload.clearFiles();
+        return;
+      }
+
       this.selectedFile = file.raw
       this.resultBlob = null
       this.resultFileName = ''
+    },
+    checkFileType(file) {
+      if (this.allowedTypes.includes(file.raw.type)) {
+        return true;
+      }
+      const fileName = file.name.toLowerCase();
+      return this.allowedExtensions.some(ext => fileName.endsWith(ext));
     },
     async handleConvert() {
       if (!this.selectedFile || !this.toFormats) return
@@ -87,7 +121,7 @@ export default {
         const res = await convertFile(this.selectedFile, this.toFormats, this.doOcr)
 
         const contentType = res.headers['content-type'] || ''
-        if (contentType.includes('application/json')) {
+        if (contentType.includes('application/json') && !this.toFormats && !this.toFormats.contains('json')) {
           const reader = new FileReader()
           reader.onload = () => {
             try {
