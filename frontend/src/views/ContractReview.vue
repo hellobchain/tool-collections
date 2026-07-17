@@ -1,7 +1,7 @@
 <template>
   <div class="contract-review">
     <div class="page-header">
-      <h2>⚡️ 合同智能审查</h2>
+      <h2>⚡️ 合同审查</h2>
       <p class="page-desc">上传合同文档，配置审查参数，自动输出审查报告</p>
     </div>
 
@@ -27,7 +27,7 @@
         >
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">拖拽合同文件到此处，或<em>点击选择</em></div>
-          <div slot="tip" class="el-upload__tip">支持 .doc .docx .pdf 格式，单文件不超过20MB，单次最多5份</div>
+          <div slot="tip" class="el-upload__tip">支持 .doc .docx .pdf 格式，单文件不超过20MB，单次最多1份</div>
         </el-upload>
       </el-card>
 
@@ -334,7 +334,7 @@ export default {
       const isDoc = /\.(doc|docx|pdf)$/i.test(file.name)
       if (!isDoc) { this.$message.error('仅支持 .doc .docx .pdf 格式'); return false }
       if (file.size > 20 * 1024 * 1024) { this.$message.error('文件大小不能超过 20MB'); return false }
-      if (this.uploadedFiles.length >= 5) { this.$message.error('单次最多上传5份文件'); return false }
+      if (this.uploadedFiles.length >= 1) { this.$message.error('单次最多上传1份文件'); return false }
       return true
     },
     async handleFileSelect(file) {

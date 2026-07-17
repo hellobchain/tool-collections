@@ -27,14 +27,20 @@
           <i class="el-icon-reading"></i>
           <span slot="title">文档解析</span>
         </el-menu-item>
-        <el-menu-item index="/contract-review">
-          <i class="el-icon-document-checked"></i>
-          <span slot="title">合同审查</span>
-        </el-menu-item>
-        <el-menu-item index="/contract-history">
-          <i class="el-icon-time"></i>
-          <span slot="title">审查历史</span>
-        </el-menu-item>
+        <el-submenu index="/contract">
+          <template slot="title">
+            <i class="el-icon-document-checked"></i>
+            <span slot="title">合同审查</span>
+          </template>
+          <el-menu-item index="/contract-review">
+            <i class="el-icon-upload2"></i>
+            <span slot="title">上传审查</span>
+          </el-menu-item>
+          <el-menu-item index="/contract-history">
+            <i class="el-icon-time"></i>
+            <span slot="title">我的审查</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container class="app-main">
