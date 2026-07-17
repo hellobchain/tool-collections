@@ -1118,15 +1118,15 @@ export default {
 
 <style scoped>
 .weekly-container {
-  min-height: 100vh;
+  min-height: 100%;
 }
 .header {
-  background: white;
+  background: #fff;
   padding: 16px 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid #e4e7ed;
 }
 .header-left {
   display: flex;
@@ -1136,6 +1136,7 @@ export default {
 .header-left h1 {
   font-size: 20px;
   margin: 0;
+  color: #333;
 }
 .week-label {
   color: #999;

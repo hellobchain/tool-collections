@@ -13,15 +13,21 @@ const router = new Router({
     },
     {
       path: '/',
-      name: 'WeeklyReport',
-      component: () => import('@/views/WeeklyReport.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('@/layouts/MainLayout.vue'),
+      meta: { requiresAuth: true },
+      children: [
+        {
+          path: '',
+          name: 'WeeklyReport',
+          component: () => import('@/views/WeeklyReport.vue')
+        }
+      ]
     }
   ]
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.meta.requiresAuth) {
+  if (to.matched.some(r => r.meta.requiresAuth)) {
     if (store.getters['auth/isAuthenticated']) {
       next()
     } else {
