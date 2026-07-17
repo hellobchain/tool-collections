@@ -7,13 +7,13 @@
 
     <el-card class="upload-card">
       <el-upload
+        :key="uploadKey"
         ref="upload"
         drag
         action=""
         :auto-upload="false"
         :show-file-list="true"
         :on-change="handleFileChange"
-        :limit="1"
         :file-list="fileList"
       >
         <i class="el-icon-upload"></i>
@@ -63,6 +63,7 @@ export default {
   name: 'DocumentParse',
   data() {
     return {
+      uploadKey: 0,
       fileList: [],
       selectedFile: null,
       toFormats: 'md',
@@ -70,7 +71,7 @@ export default {
       converting: false,
       resultBlob: null,
       resultFileName: '',
-          allowedTypes: [
+      allowedTypes: [
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -102,6 +103,8 @@ export default {
         return;
       }
 
+      this.fileList = [file]
+      this.uploadKey++
       this.selectedFile = file.raw
       this.resultBlob = null
       this.resultFileName = ''
