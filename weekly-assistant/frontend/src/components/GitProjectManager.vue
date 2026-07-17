@@ -91,7 +91,7 @@ export default {
       this.loadProjects()
     },
     async loadProjects() {
-      const res = await api.get('/api/git-projects', { params: { page: this.page, page_size: this.pageSize } })
+      const res = await api.get(`/weekly-assistant/git-projects`, { params: { page: this.page, page_size: this.pageSize } })
       if (res.data.code === 0) {
         this.projects = res.data.data.list
         this.total = res.data.data.total
@@ -122,7 +122,7 @@ export default {
       }
       this.saving = true
       try {
-        const url = this.editingId ? `/api/git-projects/${this.editingId}` : '/api/git-projects'
+        const url = this.editingId ? `/weekly-assistant/git-projects/${this.editingId}` : `/weekly-assistant/git-projects`
         const method = this.editingId ? 'put' : 'post'
         const res = await api[method](url, this.form)
         if (res.data.code === 0) {
@@ -138,7 +138,7 @@ export default {
       try {
         await this.$confirm(`确定删除项目"${p.project_name}"吗？`, '确认删除', { type: 'warning' })
       } catch { return }
-      const res = await api.delete(`/api/git-projects/${p.id}`)
+      const res = await api.delete(`/weekly-assistant/git-projects/${p.id}`)
       if (res.data.code === 0) {
         this.$message.success('已删除')
         this.loadProjects()

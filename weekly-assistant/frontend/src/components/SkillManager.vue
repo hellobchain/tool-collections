@@ -102,7 +102,7 @@ export default {
       this.loadSkills()
     },
     async loadSkills() {
-      const res = await api.get('/api/skills', { params: { page: this.page, page_size: this.pageSize } })
+      const res = await api.get(`/weekly-assistant/skills`, { params: { page: this.page, page_size: this.pageSize } })
       if (res.data.code === 0) {
         this.skills = res.data.data.list
         this.total = res.data.data.total
@@ -121,7 +121,7 @@ export default {
         this.$message.warning('请填写完整信息')
         return
       }
-      const res = await api.put(`/api/skills/${this.editData.id}`, {
+      const res = await api.put(`/weekly-assistant/skills/${this.editData.id}`, {
         name: this.editData.name,
         description: this.editData.description
       })
@@ -136,7 +136,7 @@ export default {
         this.$message.warning('请填写完整信息')
         return
       }
-      const res = await api.post('/api/skills', this.createData)
+      const res = await api.post(`/weekly-assistant/skills`, this.createData)
       if (res.data.code === 0) {
         this.$message.success('添加成功')
         this.showCreate = false
@@ -145,13 +145,13 @@ export default {
       }
     },
     async toggleSkill(s) {
-      await api.put(`/api/skills/${s.id}`, { name: s.name, description: s.description, is_active: s.is_active })
+      await api.put(`/weekly-assistant/skills/${s.id}`, { name: s.name, description: s.description, is_active: s.is_active })
     },
     async removeSkill(s) {
       try {
         await this.$confirm(`确定删除技能"${s.name}"吗？`, '确认删除', { type: 'warning' })
       } catch { return }
-      const res = await api.delete(`/api/skills/${s.id}`)
+      const res = await api.delete(`/weekly-assistant/skills/${s.id}`)
       if (res.data.code === 0) {
         this.$message.success('已删除')
         this.loadSkills()

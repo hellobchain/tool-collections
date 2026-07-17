@@ -86,7 +86,7 @@ export default {
       }
       this.registering = true
       try {
-        const res = await api.post('/api/auth/register', this.registerData)
+        const res = await api.post(`/weekly-assistant/auth/register`, this.registerData)
         if (res.data.code === 0) {
           this.$message.success('注册成功，请登录')
           this.showRegister = false

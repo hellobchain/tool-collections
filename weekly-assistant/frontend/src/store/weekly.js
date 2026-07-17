@@ -70,7 +70,7 @@ export default {
       try {
         const params = {}
         if (state.currentWeekStart) params.week_start = state.currentWeekStart
-        const res = await api.get('/api/week/status', { params })
+        const res = await api.get(`/weekly-assistant/week/status`, { params })
         if (res.data.code === 0) {
           const data = res.data.data
           commit('SET_WEEK_START', data.week_start)
@@ -88,7 +88,7 @@ export default {
     },
     loadFragments({ commit, state }, { page, append }) {
       commit('SET_FRAGMENT_LOADING', true)
-      return api.get('/api/fragments', {
+      return api.get(`/weekly-assistant/fragments`, {
         params: {
           week_start: state.currentWeekStart || state.weekStart,
           page,
@@ -116,7 +116,7 @@ export default {
         } else if (state.currentWeekStart) {
           body.date = state.currentWeekStart
         }
-        const res = await api.post('/api/fragments', body)
+        const res = await api.post(`/weekly-assistant/fragments`, body)
         if (res.data.code === 0) {
           commit('ADD_FRAGMENT', res.data.data)
           return true
@@ -126,7 +126,7 @@ export default {
     },
     async deleteFragment({ commit }, id) {
       try {
-        await api.delete(`/api/fragments/${id}`)
+        await api.delete(`/weekly-assistant/fragments/${id}`)
         commit('REMOVE_FRAGMENT', id)
         return true
       } catch {}
@@ -134,7 +134,7 @@ export default {
     },
     async confirmCarryover({ commit }, { keptIds, droppedIds }) {
       try {
-        await api.post('/api/week/carryover/confirm', { kept_ids: keptIds, dropped_ids: droppedIds })
+        await api.post(`/weekly-assistant/week/carryover/confirm`, { kept_ids: keptIds, dropped_ids: droppedIds })
         commit('CONFIRM_CARRYOVER', true)
         return true
       } catch {}
@@ -147,7 +147,7 @@ export default {
         const body = { narrative_type: state.narrativeType }
         if (payload?.template_id) body.template_id = payload.template_id
         if (state.currentWeekStart) body.week_start = state.currentWeekStart
-        const res = await api.post('/api/week/generate', body)
+        const res = await api.post(`/weekly-assistant/week/generate`, body)
         if (res.data.code === 0) {
           commit('SET_DRAFT', res.data.data.content)
         }
@@ -163,7 +163,7 @@ export default {
 		const body = { narrative_type: state.narrativeType }
         if (payload?.template_id) body.template_id = payload.template_id
         if (state.currentWeekStart) body.week_start = state.currentWeekStart
-        const res = await fetch('/api/week/generate-stream', {
+        const res = await fetch(`/weekly-assistant/week/generate-stream`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `${AUTH_SCHEME}${token}` },
           body: JSON.stringify(body)
@@ -205,7 +205,7 @@ export default {
       try {
         const body = { content: state.draftContent, narrative_type: state.narrativeType}
         if (state.currentWeekStart) body.week_start = state.currentWeekStart
-        const res = await api.post('/api/week/finalize', body)
+        const res = await api.post(`/weekly-assistant/week/finalize`, body)
         if (res.data.code === 0) {
           commit('SET_FINALIZED', true)
           return true
@@ -221,7 +221,7 @@ export default {
       if (params.week_end || params.weekEnd) query.week_end = params.week_end || params.weekEnd
       query.page = page
       query.page_size = HISTORY_PAGE_SIZE
-      return api.get('/api/week/history', { params: query }).then(res => {
+      return api.get(`/weekly-assistant/week/history`, { params: query }).then(res => {
         if (res.data.code === 0) {
           const data = res.data.data
           if (params.append) {
@@ -237,7 +237,7 @@ export default {
     },
     async deleteReport({ commit, state }, id) {
       try {
-        const res = await api.delete(`/api/week/report/${id}`)
+        const res = await api.delete(`/weekly-assistant/week/report/${id}`)
         if (res.data.code === 0) {
           commit('SET_HISTORY', state.history.filter(h => h.id !== id))
           return true

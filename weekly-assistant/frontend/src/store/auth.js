@@ -24,7 +24,7 @@ export default {
   actions: {
     async login({ commit }, { username, password }) {
       try {
-        const res = await api.post('/api/auth/login', { username, password })
+        const res = await api.post(`/weekly-assistant/auth/login`, { username, password })
         if (res.data.code === SUCCESS_CODE) {
           commit('SET_AUTH', res.data.data)
           return true

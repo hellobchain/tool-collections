@@ -23,6 +23,10 @@
           <i class="el-icon-document-copy"></i>
           <span slot="title">周报AI助手</span>
         </el-menu-item>
+        <el-menu-item index="/document-parse">
+          <i class="el-icon-reading"></i>
+          <span slot="title">文档解析</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     <el-container class="app-main">

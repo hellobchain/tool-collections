@@ -20,6 +20,11 @@ const router = new Router({
           path: '',
           name: 'WeeklyReport',
           component: () => import('@/views/WeeklyReport.vue')
+        },
+        {
+          path: '/document-parse',
+          name: 'DocumentParse',
+          component: () => import('@/views/DocumentParse.vue')
         }
       ]
     }

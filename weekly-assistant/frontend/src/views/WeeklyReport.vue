@@ -765,7 +765,7 @@ export default {
     async loadSummaries() {
       this.summaryRefreshLoading = true
       try {
-        const res = await api.get('/api/week/summaries', { params: {} })
+        const res = await api.get(`/weekly-assistant/week/summaries`, { params: {} })
         if (res.data.code === SUCCESS_CODE) {
           this.quarterSummaries = res.data.data.quarter || []
           this.yearSummaries = res.data.data.year || []
@@ -777,7 +777,7 @@ export default {
     async loadQuarterSummaries() {
       this.summaryQuarterRefreshLoading = true
       try {
-        const res = await api.get('/api/week/summaries', { params: { type: 'quarter' } })
+        const res = await api.get(`/weekly-assistant/week/summaries`, { params: { type: 'quarter' } })
         if (res.data.code === SUCCESS_CODE) {
           this.quarterSummaries = res.data.data.quarter || []
           this.$message.success('已刷新季度汇总')
@@ -789,7 +789,7 @@ export default {
     async loadYearSummaries() {
       this.summaryYearRefreshLoading = true
       try {
-        const res = await api.get('/api/week/summaries', { params: { type: 'year' } })
+        const res = await api.get(`/weekly-assistant/week/summaries`, { params: { type: 'year' } })
         if (res.data.code === SUCCESS_CODE) {
           this.yearSummaries = res.data.data.year || []
           this.$message.success('已刷新年度汇总')
@@ -803,7 +803,7 @@ export default {
       const loadingKey = type === 'quarter' ? 'genQLoading' : 'genYLoading'
       this[loadingKey] = true
       try {
-        const res = await api.get('/api/week/summary', { params: { type, value } })
+        const res = await api.get(`/weekly-assistant/week/summary`, { params: { type, value } })
         if (res.data.code === SUCCESS_CODE) {
           this.$message.success('季度/年度汇总已生成并保存')
           this.loadQuarterSummaries()
@@ -822,7 +822,7 @@ export default {
         })
       } catch { return }
       try {
-        const res = await api.delete(`/api/week/summary/${s.id}`)
+        const res = await api.delete(`/weekly-assistant/week/summary/${s.id}`)
         if (res.data.code === SUCCESS_CODE) {
           this.$message.success('已删除')
           if (s.period_type === 'quarter') {
@@ -923,7 +923,7 @@ export default {
         params.set('week_start', this.historyDateRange[0])
         params.set('week_end', this.historyDateRange[1])
       }
-      const url = `/api/week/history/weeks/export?${params.toString()}`
+      const url = `/weekly-assistant/week/history/weeks/export?${params.toString()}`
       const xhr = new XMLHttpRequest()
       xhr.open('GET', url)
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
@@ -966,7 +966,7 @@ export default {
       if (summaryType) {
         params.set('type', summaryType)
       }
-      const url = `/api/week/history/summaries/export?${params.toString()}`
+      const url = `/weekly-assistant/week/history/summaries/export?${params.toString()}`
       const xhr = new XMLHttpRequest()
       xhr.open('GET', url)
       xhr.setRequestHeader('Authorization', `Bearer ${token}`)
@@ -1000,7 +1000,7 @@ export default {
       this.gitlabLoading = true
       this.gitlabCommits = []
       try {
-        const res = await api.post('/api/gitlab/commits', {
+        const res = await api.post(`/weekly-assistant/gitlab/commits`, {
           base_url: f.base_url,
           token: f.token,
           project_id: f.project_id,
@@ -1022,14 +1022,14 @@ export default {
     async loadGitProjects() {
       this.gitProjectKeyword = ''
       this.gitProjectPage = 1
-      const res = await api.get('/api/git-projects', { params: { page: 1, page_size: 50 } })
+      const res = await api.get(`/weekly-assistant/git-projects`, { params: { page: 1, page_size: 50 } })
       if (res.data.code === SUCCESS_CODE) this.gitProjectOptions = res.data.data.list || []
     },
     async searchGitProjects(keyword) {
       this.gitProjectKeyword = keyword
       this.gitProjectSearching = true
       try {
-        const res = await api.get('/api/git-projects', { params: { page: 1, page_size: 50, keyword } })
+        const res = await api.get(`/weekly-assistant/git-projects`, { params: { page: 1, page_size: 50, keyword } })
         if (res.data.code === SUCCESS_CODE) this.gitProjectOptions = res.data.data.list || []
       } finally {
         this.gitProjectSearching = false
@@ -1095,7 +1095,7 @@ export default {
       }
       this.pwdLoading = true
       try {
-        const res = await api.post('/api/user/change-password', {
+        const res = await api.post(`/weekly-assistant/user/change-password`, {
           old_password: this.pwdForm.oldPassword,
           new_password: this.pwdForm.newPassword
         })
