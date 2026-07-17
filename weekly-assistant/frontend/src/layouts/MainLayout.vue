@@ -2,7 +2,7 @@
   <el-container class="app-container">
     <el-aside :width="isCollapsed ? '64px' : '220px'" class="app-aside">
       <div class="aside-header">
-        <span v-show="!isCollapsed" class="aside-title">首页菜单</span>
+        <span v-show="!isCollapsed" class="aside-title">🗄️🔮🤖 百宝箱</span>
         <el-button
           :icon="isCollapsed ? 'el-icon-s-unfold' : 'el-icon-s-fold'"
           size="mini"
