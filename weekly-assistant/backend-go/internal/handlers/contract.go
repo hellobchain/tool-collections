@@ -531,52 +531,235 @@ func extractXMLText(xml string) string {
 	return result.String()
 }
 
+type oleReader struct {
+	data    []byte
+	secSize int
+	secCnt  int
+}
+
+const (
+	ole2FreeSec = -1
+	ole2EndSec  = -2
+)
+
+func oleSecID(data []byte, offset int) int {
+	return int(uint32(data[offset]) | uint32(data[offset+1])<<8 | uint32(data[offset+2])<<16 | uint32(data[offset+3])<<24)
+}
+
+func (r *oleReader) sector(secID int) []byte {
+	off := (secID + 1) * r.secSize
+	if off < 0 || off+int(r.secSize) > len(r.data) {
+		return nil
+	}
+	return r.data[off : off+r.secSize]
+}
+
+func (r *oleReader) readSAT() []int {
+	// DIFAT: first 109 entries are in the header at offset 76
+	var secIDs []int
+	for i := 0; i < 109; i++ {
+		sid := oleSecID(r.data, 76+i*4)
+		if sid == ole2FreeSec || sid == 0 {
+			continue
+		}
+		secIDs = append(secIDs, sid)
+	}
+	// additional DIFAT sectors
+	nextDif := oleSecID(r.data, 44)
+	cntDif := oleSecID(r.data, 48)
+	for i := 0; i < cntDif && nextDif != ole2EndSec && nextDif >= 0; i++ {
+		sec := r.sector(nextDif)
+		if sec == nil {
+			break
+		}
+		for j := 0; j < (r.secSize/4)-1; j++ {
+			sid := int(uint32(sec[j*4]) | uint32(sec[j*4+1])<<8 | uint32(sec[j*4+2])<<16 | uint32(sec[j*4+3])<<24)
+			if sid == ole2EndSec || sid == ole2FreeSec {
+				break
+			}
+			secIDs = append(secIDs, sid)
+		}
+		nextDif = int(uint32(sec[r.secSize-4]) | uint32(sec[r.secSize-3])<<8 | uint32(sec[r.secSize-2])<<16 | uint32(sec[r.secSize-1])<<24)
+	}
+
+	// Build SAT: read each FAT sector
+	sat := make([]int, r.secCnt)
+	idx := 0
+	for _, fatSid := range secIDs {
+		sec := r.sector(fatSid)
+		if sec == nil {
+			break
+		}
+		for j := 0; j < r.secSize/4 && idx < r.secCnt; j++ {
+			sat[idx] = int(uint32(sec[j*4]) | uint32(sec[j*4+1])<<8 | uint32(sec[j*4+2])<<16 | uint32(sec[j*4+3])<<24)
+			idx++
+		}
+	}
+	return sat
+}
+
+func (r *oleReader) readStreamData(startSecID, size int, sat []int) []byte {
+	if startSecID < 0 || size <= 0 {
+		return nil
+	}
+	out := make([]byte, 0, size)
+	sid := startSecID
+	for sid >= 0 && sid != ole2EndSec && len(out) < size {
+		sec := r.sector(sid)
+		if sec == nil {
+			break
+		}
+		remain := size - len(out)
+		if remain >= r.secSize {
+			out = append(out, sec...)
+		} else {
+			out = append(out, sec[:remain]...)
+		}
+		if sid >= len(sat) {
+			break
+		}
+		sid = sat[sid]
+	}
+	return out
+}
+
+type oleDirEntry struct {
+	name     string
+	objType  byte
+	startSec int
+	size     int
+	child    int
+}
+
+func (r *oleReader) readDirEntries(sat []int) []oleDirEntry {
+	dirSecID := oleSecID(r.data, 30)
+	if dirSecID < 0 {
+		return nil
+	}
+	dirData := r.readStreamData(dirSecID, r.secSize*100, sat) // read enough for directory
+	if len(dirData) == 0 {
+		return nil
+	}
+
+	entries := make([]oleDirEntry, 0, len(dirData)/128)
+	for i := 0; i+127 < len(dirData); i += 128 {
+		// name is UTF-16LE at offset 0, max 64 bytes (32 chars)
+		nameLen := int(dirData[i+64]) | int(dirData[i+65])<<8
+		if nameLen < 2 {
+			break
+		}
+		nameBytes := dirData[i : i+nameLen-2] // exclude null terminator
+		name := decodeUTF16LE(nameBytes)
+
+		objType := dirData[i+66]
+		startSec := int(uint32(dirData[i+116]) | uint32(dirData[i+117])<<8 | uint32(dirData[i+118])<<16 | uint32(dirData[i+119])<<24)
+		size := int(uint32(dirData[i+120]) | uint32(dirData[i+121])<<8 | uint32(dirData[i+122])<<16 | uint32(dirData[i+123])<<24)
+		child := int(uint32(dirData[i+76]) | uint32(dirData[i+77])<<8 | uint32(dirData[i+78])<<16 | uint32(dirData[i+79])<<24)
+
+		entries = append(entries, oleDirEntry{
+			name:     name,
+			objType:  objType,
+			startSec: startSec,
+			size:     size,
+			child:    child,
+		})
+	}
+	return entries
+}
+
+func decodeUTF16LE(b []byte) string {
+	if len(b)%2 != 0 {
+		b = b[:len(b)-1]
+	}
+	runes := make([]rune, 0, len(b)/2)
+	for i := 0; i < len(b)-1; i += 2 {
+		low := uint16(b[i])
+		high := uint16(b[i+1])
+		if low == 0 && high == 0 {
+			break
+		}
+		if high == 0 && low >= 0x20 && low <= 0x7E {
+			runes = append(runes, rune(low))
+		} else if high == 0 && low >= 0x80 {
+			runes = append(runes, rune(low))
+		} else {
+			r := rune(high)<<16 | rune(low)
+			runes = append(runes, r)
+		}
+	}
+	return string(runes)
+}
+
 func extractDocText(data []byte) string {
-	if len(data) < 8 {
-		log.Printf("File is too small to be a .doc file")
+	if len(data) < 512 {
 		return extractPrintableStrings(data)
 	}
 
-	// try zip first — some .doc files are actually .docx
+	// Try zip first — some .doc files are actually .docx
 	if _, err := zip.NewReader(bytes.NewReader(data), int64(len(data))); err == nil {
-		log.Printf("Found OLE2 magic, assuming .docx")
 		return extractDocxText(data)
 	}
 
-	// OLE2 magic: D0 CF 11 E0 A1 B1 1A E1
-	isOLE2 := data[0] == 0xD0 && data[1] == 0xCF &&
-		data[2] == 0x11 && data[3] == 0xE0 &&
-		data[4] == 0xA1 && data[5] == 0xB1 &&
-		data[6] == 0x1A && data[7] == 0xE1
+	// Verify OLE2 magic
+	if data[0] != 0xD0 || data[1] != 0xCF || data[2] != 0x11 || data[3] != 0xE0 ||
+		data[4] != 0xA1 || data[5] != 0xB1 || data[6] != 0x1A || data[7] != 0xE1 {
+		return extractPrintableStrings(data)
+	}
 
-	if !isOLE2 {
-		log.Printf("Not an OLE2 file")
+	secPower := int(data[30]) // typically 9 = 512 bytes
+	secSize := 1 << uint(secPower)
+	if secSize < 64 || secSize > 4096 {
+		return extractPrintableStrings(data)
+	}
+	secCnt := (len(data) + secSize - 1) / secSize
+
+	rd := &oleReader{data: data, secSize: secSize, secCnt: secCnt}
+	sat := rd.readSAT()
+	if len(sat) == 0 {
+		return extractPrintableStrings(data)
+	}
+
+	entries := rd.readDirEntries(sat)
+	if len(entries) == 0 {
 		return extractPrintableStrings(data)
 	}
 
 	var result strings.Builder
 
-	textUTF16 := extractUTF16LEText(data)
-	if textUTF16 != "" {
-		result.WriteString(textUTF16)
-		result.WriteString("\n")
+	for _, e := range entries {
+		if e.objType != 2 && e.objType != 5 { // not a stream or root
+			continue
+		}
+		if e.size <= 0 || e.startSec < 0 {
+			continue
+		}
+		streamData := rd.readStreamData(e.startSec, e.size, sat)
+		if len(streamData) == 0 {
+			continue
+		}
+
+		// Extract UTF-16LE text from this stream's data
+		text := extractUTF16LEText(streamData)
+		if text != "" {
+			if result.Len() > 0 {
+				result.WriteString("\n")
+			}
+			result.WriteString(text)
+		}
 	}
 
-	textASCII := extractPrintableStrings(data)
-	if textASCII != "" {
-		result.WriteString(textASCII)
+	// If we got text from OLE2 streams, return it
+	if result.Len() > 0 {
+		return result.String()
 	}
 
-	combined := result.String()
-	if len(combined) < 20 {
-		return string(data)
-	}
-	return combined
+	// Fallback: scan raw bytes for printable strings
+	return extractPrintableStrings(data)
 }
 
 func extractUTF16LEText(data []byte) string {
 	var result strings.Builder
-	runes := make([]rune, 0, len(data)/16)
+	runes := make([]rune, 0, len(data)/8)
 
 	for i := 0; i < len(data)-1; i += 2 {
 		low := uint16(data[i])
@@ -608,7 +791,6 @@ func extractUTF16LEText(data []byte) string {
 	if len(runes) >= 4 {
 		result.WriteString(string(runes))
 	}
-
 	return result.String()
 }
 
@@ -639,7 +821,6 @@ func extractPrintableStrings(data []byte) string {
 		}
 		result.Write(buf)
 	}
-
 	return result.String()
 }
 
