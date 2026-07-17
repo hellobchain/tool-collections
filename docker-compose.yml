@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: weekly123
+      POSTGRES_DB: weekly_assistant
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - markitdown-network
+
+  backend:
+    image: weekly-assistant:v1.0.0
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: weekly123
+      DB_NAME: weekly_assistant
+      JWT_SECRET: ${JWT_SECRET:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-}
+      DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-}
+      DEEPSEEK_MAX_TOKENS: ${DEEPSEEK_MAX_TOKENS:-}
+      PORT: 8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - markitdown-network
+
+  frontend:
+    image: weekly-assistant-web:v1.0.0
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - markitdown-network
+
+  docling-service:
+    image: docling-service:v1.0.0
+    ports:
+      - "5001:5001"
+    networks:
+      - markitdown-network
+
+  markitdown-api:
+    image: markitdown-api:v1.0.0
+    container_name: markitdown-api
+    ports:
+      - "8001:8001"
+    environment:
+      - API_KEY=${API_KEY:-your-secret-api-key-change-me}
+      - RATE_LIMIT=${RATE_LIMIT:-10/minute}
+      - MAX_FILE_SIZE=${MAX_FILE_SIZE:-50}
+      - ENABLE_LLM=${ENABLE_LLM:-false}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - CONVERT_TIMEOUT=${CONVERT_TIMEOUT:-120}
+    restart: unless-stopped
+    networks:
+      - markitdown-network
+
+networks:
+  markitdown-network:
+    driver: bridge
+      
+volumes:
+  pgdata:
