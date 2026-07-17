@@ -79,7 +79,7 @@ export default {
 }
 .aside-title {
   color: #333;
-  font-size: 14px;
+  font-size: 18px;
   white-space: nowrap;
   overflow: hidden;
 }
