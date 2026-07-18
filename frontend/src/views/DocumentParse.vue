@@ -14,6 +14,7 @@
         :auto-upload="false"
         :show-file-list="true"
         :on-change="handleFileChange"
+        :on-remove="handleFileRemove"
         :file-list="fileList"
       >
         <i class="el-icon-upload"></i>
@@ -85,6 +86,12 @@ export default {
     }
   },
   methods: {
+    handleFileRemove() {
+      this.selectedFile = null
+      this.fileList = []
+      this.resultBlob = null
+      this.resultFileName = ''
+    },
     handleFileChange(file) {
       // 校验文件类型
       const isValidType = this.checkFileType(file);
@@ -117,7 +124,7 @@ export default {
       return this.allowedExtensions.some(ext => fileName.endsWith(ext));
     },
     async handleConvert() {
-      if (!this.selectedFile || !this.toFormats) return
+      if (!this.selectedFile || !this.toFormats || !this.fileList.length) return
 
       this.converting = true
       try {
@@ -143,6 +150,10 @@ export default {
         const baseName = nameParts.slice(0, -1).join('.') || this.selectedFile.name
         const extMap = { md: 'md', json: 'json', html: 'html', text: 'txt' }
         this.resultFileName = `${baseName}.${extMap[this.toFormats] || this.toFormats}`
+        this.selectedFile = null
+        this.fileList = []
+        this.$refs.upload.clearFiles()
+        this.uploadKey++
         this.$message.success('转换成功')
       } catch (err) {
         if (err.response?.data instanceof Blob) {

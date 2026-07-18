@@ -6,7 +6,20 @@ export function convertFile(file, toFormats, doOcr = true) {
   formData.append('to_formats', toFormats)
   formData.append('do_ocr', doOcr)
 
-  return api.post('/textparse/v1/convert/fileStream', formData, {
+  return api.post(`/textparse/v1/convert/fileStream`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    responseType: 'blob',
+    timeout: 180000
+  })
+}
+
+export function mdFile2DocxFile(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return api.post(`/md2docx/v1/convert/file`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     },

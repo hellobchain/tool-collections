@@ -23,10 +23,20 @@
           <i class="el-icon-document-copy"></i>
           <span slot="title">周报AI助手</span>
         </el-menu-item>
-        <el-menu-item index="/document-parse">
-          <i class="el-icon-reading"></i>
-          <span slot="title">文档解析</span>
-        </el-menu-item>
+        <el-submenu index="/document">
+          <template slot="title">
+            <i class="el-icon-reading"></i>
+            <span slot="title">文档解析</span>
+          </template>
+          <el-menu-item index="/document-parse">
+            <i class="el-icon-document"></i>
+            <span slot="title">文档转换</span>
+          </el-menu-item>
+          <el-menu-item index="/md-to-docx">
+            <i class="el-icon-document"></i>
+            <span slot="title">MD 转 Word</span>
+          </el-menu-item>
+        </el-submenu>
         <el-submenu index="/contract">
           <template slot="title">
             <i class="el-icon-document-checked"></i>
