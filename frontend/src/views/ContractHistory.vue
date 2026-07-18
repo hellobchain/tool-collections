@@ -24,7 +24,25 @@
         </el-table-column>
         <el-table-column prop="contract_type_label" label="类型" width="100" />
         <el-table-column prop="reviewer" label="审查人" width="100" />
-        <el-table-column prop="review_time" label="审查时间" width="160" />
+        <el-table-column prop="review_start_time" label="审查开始时间" width="160" />
+        <el-table-column prop="review_end_time" label="审查结束时间" width="160" />
+        <el-table-column label="审查结果" width="100">
+          <template slot-scope="{ row }">
+            <el-tag v-if="row.status==='completed'" type="success" size="mini">已完成</el-tag>
+            <el-tag v-else-if="row.status==='failed'" type="danger" size="mini">失败</el-tag>
+            <el-tag v-else-if="row.status==='running'" type="warning" size="mini">审查中</el-tag>
+            <el-tag v-else-if="row.status==='pending'" type="info" size="mini">待审查</el-tag>
+            <span v-else>{{ row.status }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="审查进度" width="150">
+          <template slot-scope="{ row }">
+            <div class="progress-bar">
+              <div class="progress-fill" :style="{ width: (row.progress || 0) + '%' }"></div>
+              <span class="progress-text">{{ row.progress || 0 }}%</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="风险统计" width="180">
           <template slot-scope="{ row }">
             <span v-if="row.risk_stats">
@@ -67,7 +85,8 @@
           <h3>审查报告：{{ detailReport.file_name || detailReport.name }}</h3>
           <div class="dialog-meta">
             <span>合同类型：{{ detailReport.contract_type_label || detailReport.contract_type }}</span>
-            <span>审查时间：{{ detailReport.review_time }}</span>
+            <span>审查开始时间：{{ detailReport.review_start_time }}</span>
+            <span>审查结束时间：{{ detailReport.review_end_time }}</span>
             <span>审查人：{{ detailReport.reviewer }}</span>
           </div>
           <div class="risk-stat" v-if="detailReport.risk_stats">
@@ -208,4 +227,7 @@ export default {
 .risk-item.medium .risk-num { color: #e6a23c; }
 .risk-item.low .risk-num { color: #409eff; }
 .dialog-actions { text-align: center; padding: 16px 0; }
+.progress-bar { position: relative; height: 20px; background: #ebeef5; border-radius: 10px; overflow: hidden; }
+.progress-fill { height: 100%; background: #409eff; border-radius: 10px; transition: width 0.3s; }
+.progress-text { position: absolute; top: 0; left: 0; right: 0; line-height: 20px; text-align: center; font-size: 12px; color: #333; }
 </style>

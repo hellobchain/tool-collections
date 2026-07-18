@@ -17,6 +17,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/hellobchain/weekly-assistant/internal/constants"
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
 	"github.com/hellobchain/weekly-assistant/internal/models"
@@ -43,7 +44,7 @@ func UploadContract(c *gin.Context) {
 		return
 	}
 
-	if header.Size > 20*1024*1024 {
+	if header.Size > constants.MAX_FILE_SIZE {
 		log.Printf("Invalid file size: %d", header.Size)
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, "文件大小不能超过 20MB")
 		return
@@ -57,27 +58,30 @@ func UploadContract(c *gin.Context) {
 	}
 
 	fileUUID := uuid.New().String()
+	dateStr := time.Now().Format("2006-01-02")
+	fileName := header.Filename
+	fileSavePath := filepath.Join(dateStr, fileUUID, fileName)
 	ctx := context.Background()
 
-	if err := services.UploadContractFile(ctx, fileUUID, data); err != nil {
+	if err := services.UploadContractFile(ctx, fileSavePath, data); err != nil {
 		log.Printf("Failed to upload contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "文件上传至存储失败")
 		return
 	}
 
 	cf := models.ContractFile{
-		ID:       uuid.New(),
-		UserID:   userUUID,
-		FileName: header.Filename,
-		FileSize: header.Size,
-		FileUUID: fileUUID,
-		Bucket:   services.GetOssBucket(),
-		FileType: ext,
-		Status:   "parsed",
+		UserID:       userUUID,
+		FileName:     fileName,
+		FileSize:     header.Size,
+		FileUUID:     fileUUID,
+		FileSavePath: fileSavePath,
+		Bucket:       services.GetOssBucket(),
+		FileType:     ext,
+		Status:       "parsed",
 	}
 	if err := database.DB.Create(&cf).Error; err != nil {
 		log.Printf("Failed to save contract file record: %v", err)
-		services.DeleteContractFile(ctx, fileUUID)
+		services.DeleteContractFile(ctx, fileSavePath)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "保存文件记录失败")
 		return
 	}
@@ -103,8 +107,8 @@ func DeleteContractFile(c *gin.Context) {
 		return
 	}
 
-	if cf.FileUUID != "" {
-		services.DeleteContractFile(context.Background(), cf.FileUUID)
+	if cf.FileSavePath != "" {
+		services.DeleteContractFile(context.Background(), cf.FileSavePath)
 	}
 
 	database.DB.Delete(&cf)
@@ -123,13 +127,13 @@ func GetContractText(c *gin.Context) {
 		return
 	}
 
-	if cf.FileUUID == "" {
-		log.Printf("Invalid contract file: %s", cf.FileUUID)
+	if cf.FileSavePath == "" {
+		log.Printf("Invalid contract file: %s", cf.FileSavePath)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "文件存储信息缺失")
 		return
 	}
 
-	data, err := services.DownloadContractFile(context.Background(), cf.FileUUID)
+	data, err := services.DownloadContractFile(context.Background(), cf.FileSavePath)
 	if err != nil {
 		log.Printf("Failed to download contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "获取文件内容失败")
@@ -201,6 +205,7 @@ func StartReview(c *gin.Context) {
 	standardsLabel := standardsLabel(req.Standards)
 	ruleNames := ruleNameList()
 	totalRules := len(ruleNames)
+	reviewStartTime := time.Now().Format("2006-01-02 15:04:05")
 	review := models.ContractReview{
 		UserID:            userUUID,
 		FileName:          files[0].FileName,
@@ -218,6 +223,7 @@ func StartReview(c *gin.Context) {
 		LowRisk:           0,
 		TotalRules:        totalRules,
 		Reviewer:          userName,
+		ReviewStartTime:   reviewStartTime,
 	}
 
 	if err := database.DB.Create(&review).Error; err != nil {
@@ -304,7 +310,8 @@ func GetReviewReport(c *gin.Context) {
 		"conclusion":          review.Conclusion,
 		"total_rules":         review.TotalRules,
 		"risk_stats":          riskStats,
-		"review_time":         review.ReviewTime,
+		"review_start_time":   review.ReviewStartTime,
+		"review_end_time":     review.ReviewEndTime,
 		"reviewer":            review.Reviewer,
 		"items":               itemList,
 	})
@@ -410,11 +417,13 @@ func GetHistory(c *gin.Context) {
 			"contract_type":       r.ContractType,
 			"contract_type_label": r.ContractTypeLabel,
 			"reviewer":            r.Reviewer,
-			"review_time":         r.ReviewTime,
+			"review_start_time":   r.ReviewStartTime,
+			"review_end_time":     r.ReviewEndTime,
 			"risk_stats":          riskStats,
 			"total_risks":         r.HighRisk + r.MediumRisk + r.LowRisk,
 			"conclusion":          r.Conclusion,
 			"status":              r.Status,
+			"progress":            r.Progress,
 		})
 	}
 
@@ -882,7 +891,9 @@ func tryDecode(data []byte) string {
 	for i := 0; i < len(data)-1; i += 2 {
 		r := rune(data[i]) | rune(data[i+1])<<8
 		if isTextRune(r) {
-			if cur < 0 { cur = i }
+			if cur < 0 {
+				cur = i
+			}
 		} else {
 			if cur >= 0 && i-cur >= minSeg {
 				// Merge with previous if gap is 1 char (0x07 cell mark)
@@ -898,7 +909,9 @@ func tryDecode(data []byte) string {
 	if cur >= 0 && len(data)-cur >= minSeg {
 		segs = append(segs, seg{cur, len(data)})
 	}
-	if len(segs) == 0 { return "" }
+	if len(segs) == 0 {
+		return ""
+	}
 
 	var buf strings.Builder
 	for _, s := range segs {
@@ -948,8 +961,6 @@ func isTextRune(r rune) bool {
 		return false
 	}
 }
-
-
 
 func extractPrintableStrings(data []byte) string {
 	var result strings.Builder
@@ -1043,8 +1054,8 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 
 	var allText string
 	for _, f := range files {
-		if f.FileUUID != "" {
-			data, err := services.DownloadContractFile(context.Background(), f.FileUUID)
+		if f.FileSavePath != "" {
+			data, err := services.DownloadContractFile(context.Background(), f.FileSavePath)
 			if err == nil {
 				text := extractText(f.FileName, data)
 				allText += text + "\n"
@@ -1069,6 +1080,9 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 		database.DB.Model(review).Updates(map[string]interface{}{
 			"progress":     progress,
 			"current_rule": name,
+			"high_risk":    review.HighRisk,
+			"medium_risk":  review.MediumRisk,
+			"low_risk":     review.LowRisk,
 		})
 
 		rulePrompt := fmt.Sprintf(`作为合同审查专家，请对以下合同文本进行审查。
@@ -1163,16 +1177,16 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 	}
 
 	conclusion := generateConclusion(review.HighRisk, review.MediumRisk)
-	reviewTime := time.Now().Format("2006-01-02 15:04")
+	reviewEndTime := time.Now().Format("2006-01-02 15:04:05")
 
 	database.DB.Model(review).Updates(map[string]interface{}{
-		"status":      "completed",
-		"progress":    100,
-		"high_risk":   review.HighRisk,
-		"medium_risk": review.MediumRisk,
-		"low_risk":    review.LowRisk,
-		"conclusion":  conclusion,
-		"review_time": reviewTime,
+		"status":          "completed",
+		"progress":        100,
+		"high_risk":       review.HighRisk,
+		"medium_risk":     review.MediumRisk,
+		"low_risk":        review.LowRisk,
+		"conclusion":      conclusion,
+		"review_end_time": reviewEndTime,
 	})
 }
 
@@ -1348,7 +1362,8 @@ func writeTextReport(w io.Writer, review *models.ContractReview, items []models.
 	fmt.Fprintf(w, "合同类型：%s\n", review.ContractTypeLabel)
 	fmt.Fprintf(w, "审查立场：%s\n", review.PositionLabel)
 	fmt.Fprintf(w, "审查标准：%s\n", review.StandardsLabel)
-	fmt.Fprintf(w, "审查时间：%s\n", review.ReviewTime)
+	fmt.Fprintf(w, "审查开始时间：%s\n", review.ReviewStartTime)
+	fmt.Fprintf(w, "审查结束时间：%s\n", review.ReviewEndTime)
 	fmt.Fprintf(w, "审查人：%s\n", review.Reviewer)
 	fmt.Fprintf(w, "综合评级：%s\n\n", review.Conclusion)
 
@@ -1378,8 +1393,8 @@ func writeTextReport(w io.Writer, review *models.ContractReview, items []models.
 }
 
 func writeExcelReport(w io.Writer, review *models.ContractReview, items []models.ContractReviewItem) {
-	fmt.Fprintf(w, "合同名称\t合同类型\t审查立场\t审查时间\t综合评级\n")
-	fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n\n", review.FileName, review.ContractTypeLabel, review.PositionLabel, review.ReviewTime, review.Conclusion)
+	fmt.Fprintf(w, "合同名称\t合同类型\t审查立场\t审查开始时间\t审查结束时间\t综合评级\n")
+	fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n\n", review.FileName, review.ContractTypeLabel, review.PositionLabel, review.ReviewStartTime, review.ReviewEndTime, review.Conclusion)
 	fmt.Fprintf(w, "风险等级\t条款\t规则名称\t问题描述\t修改建议\t法律依据\t原文\t状态\n")
 	for _, item := range items {
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", item.Level, item.Section, item.RuleName, item.Description, item.Suggestion, item.LawRef, item.OriginalText, item.Comment)

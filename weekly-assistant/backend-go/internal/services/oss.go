@@ -53,20 +53,25 @@ func GetOssClient() ossclient.OssClient {
 }
 
 func GetOssBucket() string {
-	return config.AppConfig.MinioBucket
+	switch config.AppConfig.SaveType {
+	case constants.LOCAL_SAVE_TYPE:
+		return config.AppConfig.LocalSavePath
+	default:
+		return config.AppConfig.MinioBucket
+	}
 }
 
-func UploadContractFile(ctx context.Context, fileUUID string, data []byte) error {
+func UploadContractFile(ctx context.Context, fileSavePath string, data []byte) error {
 	client := GetOssClient()
-	return client.Upload(ctx, GetOssBucket(), fileUUID, data)
+	return client.Upload(ctx, GetOssBucket(), fileSavePath, data)
 }
 
-func DownloadContractFile(ctx context.Context, fileUUID string) ([]byte, error) {
+func DownloadContractFile(ctx context.Context, fileSavePath string) ([]byte, error) {
 	client := GetOssClient()
-	return client.Download(ctx, GetOssBucket(), fileUUID)
+	return client.Download(ctx, GetOssBucket(), fileSavePath)
 }
 
-func DeleteContractFile(ctx context.Context, fileUUID string) error {
+func DeleteContractFile(ctx context.Context, fileSavePath string) error {
 	client := GetOssClient()
-	return client.DeleteObject(ctx, GetOssBucket(), fileUUID)
+	return client.DeleteObject(ctx, GetOssBucket(), fileSavePath)
 }

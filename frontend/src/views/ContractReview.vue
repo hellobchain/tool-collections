@@ -217,6 +217,15 @@
         <el-button type="primary" @click="$router.push('/contract-history')">查看历史记录</el-button>
       </div>
     </div>
+
+    <!-- Preview Dialog (outside steps) -->
+    <el-dialog title="合同原文预览" :visible.sync="previewVisible" width="60%" top="5vh">
+      <pre class="preview-content" v-if="previewText">{{ previewText }}</pre>
+      <div v-else class="preview-empty">加载中...</div>
+      <span slot="footer">
+        <el-button @click="previewVisible=false">关闭</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -236,7 +245,9 @@ export default {
       pollTimer: null,
       filterLevel: '',
       searchKeyword: '',
-      highlightText: ''
+      highlightText: '',
+      previewVisible: false,
+      previewText: ''
     }
   },
   computed: {
@@ -369,13 +380,30 @@ export default {
       }
       this.$refs.upload.clearFiles()
     },
-    removeFile(file) {
-      this.$confirm('确定移除此文件？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }).then(() => {
-        this.$store.commit('contract/REMOVE_UPLOADED_FILE', file.id)
-      }).catch(() => {})
+    async removeFile(file) {
+      try {
+        await this.$confirm('确定移除此文件？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' })
+      } catch {
+        return
+      }
+      try {
+        const { deleteContract } = await import('@/api/contract')
+        await deleteContract(file.id)
+      } catch (e) {
+        // ignore backend error, still remove from local
+      }
+      this.$store.commit('contract/REMOVE_UPLOADED_FILE', file.id)
     },
-    previewFile(file) {
-      this.$store.dispatch('contract/fetchContractText', file.id)
+    async previewFile(file) {
+      this.previewText = ''
+      this.previewVisible = true
+      try {
+        const { getContractText } = await import('@/api/contract')
+        const res = await getContractText(file.id)
+        this.previewText = res.data.data || res.data || '（无内容）'
+      } catch {
+        this.previewText = '（获取内容失败）'
+      }
     },
     standardRuleCount(val) {
       const ruleMap = { internal: 12, legal: 8, industry: 5, custom: 6 }
@@ -400,7 +428,7 @@ export default {
       this.pollTimer = setInterval(async () => {
         try {
           const progress = await this.$store.dispatch('contract/pollProgress')
-          if (progress && progress.percent >= 100) {
+          if (progress && (progress.percent >= 100|| progress.status === 'failed')) {
             this.stopPolling()
             await this.$store.dispatch('contract/fetchReport')
             this.$store.commit('contract/SET_REVIEWING', false)
@@ -576,6 +604,8 @@ export default {
 .original-text { color: #606266; cursor: pointer; border-bottom: 1px dashed #dcdfe6; }
 .original-text:hover { color: #409eff; }
 .risk-item-comment { margin-top: 8px; padding: 6px 10px; background: #fdf6ec; border-radius: 4px; font-size: 13px; color: #e6a23c; }
+.preview-content { white-space: pre-wrap; word-break: break-all; line-height: 1.8; font-size: 14px; max-height: 70vh; overflow: auto; margin: 0; font-family: inherit; }
+.preview-empty { text-align: center; color: #999; padding: 40px 0; }
 @media (max-width: 1200px) {
   .contract-text-panel { display: none; }
   .report-layout { flex-direction: column; }

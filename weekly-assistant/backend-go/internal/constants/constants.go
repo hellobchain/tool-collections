@@ -5,6 +5,7 @@ const (
 	OSS_S3_SAVE_TYPE     = "oss_s3"
 	OSS_MINIO_SAVE_TYPE  = "oss_minio"
 	OSS_ALIYUN_SAVE_TYPE = "oss_aliyun"
+	MAX_FILE_SIZE        = 20 * 1024 * 1024
 )
 
 // ============ 分页 ============

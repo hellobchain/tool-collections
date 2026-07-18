@@ -8,28 +8,26 @@ import (
 )
 
 type ContractFile struct {
-	ID        uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
-	UserID    uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
-	FileName  string         `gorm:"size:512;not null" json:"name"`
-	FileSize  int64          `json:"size"`
-	FileUUID  string         `gorm:"size:128;not null;index" json:"file_uuid"`
-	Bucket    string         `gorm:"size:128" json:"bucket"`
-	FileType  string         `gorm:"size:32" json:"file_type"`
-	Status    string         `gorm:"size:32;default:parsed" json:"status"`
-	CreatedAt time.Time      `json:"created_at"`
-	UpdatedAt time.Time      `json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"index" json:"-"`
+	BaseModel
+	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	FileName     string         `gorm:"size:512;not null" json:"name"`
+	FileSize     int64          `json:"size"`
+	FileUUID     string         `gorm:"size:128;not null;index" json:"file_uuid"`
+	FileSavePath string         `gorm:"size:512;not null;index" json:"file_save_path"`
+	Bucket       string         `gorm:"size:128" json:"bucket"`
+	FileType     string         `gorm:"size:32" json:"file_type"`
+	Status       string         `gorm:"size:32;default:parsed" json:"status"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (f *ContractFile) BeforeCreate(tx *gorm.DB) error {
-	if f.ID == uuid.Nil {
-		f.ID = uuid.New()
-	}
-	return nil
+	return f.BaseModel.BeforeCreate(tx)
 }
 
 type ContractReview struct {
-	ID                uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	BaseModel
 	UserID            uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
 	FileName          string         `gorm:"size:512" json:"file_name"`
 	FileIDs           string         `gorm:"type:text" json:"-"`
@@ -48,21 +46,19 @@ type ContractReview struct {
 	TotalRules        int            `gorm:"default:0" json:"total_rules"`
 	Conclusion        string         `gorm:"size:128" json:"conclusion"`
 	Reviewer          string         `gorm:"size:64" json:"reviewer"`
-	ReviewTime        string         `gorm:"size:32" json:"review_time"`
+	ReviewStartTime   string         `gorm:"size:32" json:"review_start_time"`
+	ReviewEndTime     string         `gorm:"size:32" json:"review_end_time"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         time.Time      `json:"updated_at"`
 	DeletedAt         gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 func (r *ContractReview) BeforeCreate(tx *gorm.DB) error {
-	if r.ID == uuid.Nil {
-		r.ID = uuid.New()
-	}
-	return nil
+	return r.BaseModel.BeforeCreate(tx)
 }
 
 type ContractReviewItem struct {
-	ID           uuid.UUID      `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	BaseModel
 	ReviewID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"review_id"`
 	Level        string         `gorm:"size:16" json:"level"`
 	Section      string         `gorm:"size:64" json:"section"`
@@ -80,8 +76,5 @@ type ContractReviewItem struct {
 }
 
 func (i *ContractReviewItem) BeforeCreate(tx *gorm.DB) error {
-	if i.ID == uuid.Nil {
-		i.ID = uuid.New()
-	}
-	return nil
+	return i.BaseModel.BeforeCreate(tx)
 }
