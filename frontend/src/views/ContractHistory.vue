@@ -91,7 +91,9 @@
         <div class="dialog-overview">
           <h3>审查报告：{{ detailReport.file_name || detailReport.name }}</h3>
           <div class="dialog-meta">
-            <span>合同类型：{{ detailReport.contract_type_label || detailReport.contract_type }}</span>
+            <span class="meta-contractType">合同类型：{{ detailReport.contract_type_label || detailReport.contract_type }}</span>
+            <span class="meta-position">立场：{{ detailReport.position_label }}</span>
+            <span class="meta-standards">标准：{{ detailReport.standards_label }}</span>
             <span>审查开始时间：{{ detailReport.review_start_time }}</span>
             <span>审查结束时间：{{ detailReport.review_end_time }}</span>
             <span>审查人：{{ detailReport.reviewer }}</span>
@@ -244,7 +246,10 @@ export default {
 .dialog-report { padding: 0 16px; }
 .dialog-overview { margin-bottom: 20px; }
 .dialog-overview h3 { font-size: 18px; margin: 0 0 12px; }
-.dialog-meta { display: flex; gap: 20px; font-size: 13px; color: #666; margin-bottom: 12px; }
+.dialog-meta { display: flex; gap: 20px; font-size: 13px; color: #666; margin-bottom: 12px; flex-wrap: wrap; }
+.dialog-meta .meta-contractType { color: green; }
+.dialog-meta .meta-position { color: #e6a23c; }
+.dialog-meta .meta-standards { color: #409eff; }
 .risk-stat { display: flex; gap: 24px; margin-bottom: 12px; }
 .risk-item { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .risk-num { font-size: 24px; font-weight: 700; }

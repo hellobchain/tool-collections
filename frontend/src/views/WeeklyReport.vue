@@ -17,15 +17,6 @@
       </div>
       <div class="header-right">
         <el-tag v-if="isFinalized" type="success">已归档</el-tag>
-        <el-dropdown @command="handleUserCommand" trigger="click">
-          <span class="el-dropdown-link username">
-            {{ currentUser?.username }} <i class="el-icon-arrow-down el-icon--right"></i>
-          </span>
-          <el-dropdown-menu slot="dropdown">
-            <el-dropdown-item command="profile"><i class="el-icon-setting"></i> 个人中心</el-dropdown-item>
-            <el-dropdown-item command="logout" divided><i class="el-icon-switch-button"></i> 退出登录</el-dropdown-item>
-          </el-dropdown-menu>
-        </el-dropdown>
       </div>
     </div>
 
@@ -390,28 +381,7 @@
       </span>
     </el-dialog>
 
-    <!-- 个人中心 -->
-    <el-dialog title="个人中心" :visible.sync="profileVisible" width="400px">
-      <el-form label-width="100px">
-        <el-form-item label="用户名">
-          <el-input :value="currentUser?.username" disabled />
-        </el-form-item>
-        <el-form-item label="原密码">
-          <el-input v-model="pwdForm.oldPassword" name="old_password" placeholder="请输入原密码" :type="pwdShow.old ? 'text' : 'password'">
-            <i slot="suffix" class="el-icon-view" style="cursor:pointer;font-size:16px" @click="pwdShow.old = !pwdShow.old" />
-          </el-input>
-        </el-form-item>
-        <el-form-item label="新密码">
-          <el-input v-model="pwdForm.newPassword" name="new_password" placeholder="请输入新密码（至少6位）" :type="pwdShow.new ? 'text' : 'password'">
-            <i slot="suffix" class="el-icon-view" style="cursor:pointer;font-size:16px" @click="pwdShow.new = !pwdShow.new" />
-          </el-input>
-        </el-form-item>
-      </el-form>
-      <span slot="footer">
-        <el-button @click="profileVisible = false">取消</el-button>
-        <el-button type="primary" :loading="pwdLoading" @click="handleChangePassword">修改密码</el-button>
-      </span>
-    </el-dialog>
+
   </div>
 </template>
 
@@ -469,10 +439,7 @@ export default {
       fragmentDate: '',
       selectedWeek: '',
       historyDateRange: null,
-      profileVisible: false,
-      pwdLoading: false,
-      pwdForm: { oldPassword: '', newPassword: '' },
-      pwdShow: { old: false, new: false },
+
       draftMode: 'edit',
       refreshing: false,
       submitting: false,
@@ -1069,49 +1036,7 @@ export default {
         this.refreshFragments()
       }
     },
-    handleUserCommand(cmd) {
-      if (cmd === 'profile') {
-        this.pwdForm = { oldPassword: '', newPassword: '' }
-        this.profileVisible = true
-      } else if (cmd === 'logout') {
-        this.$confirm('确定要退出登录吗？', '退出确认', {
-          confirmButtonText: '确定',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }).then(() => {
-          this.$store.dispatch('auth/logout')
-          this.$router.push('/login')
-        }).catch(() => {})
-      }
-    },
-    async handleChangePassword() {
-      if (!this.pwdForm.oldPassword || !this.pwdForm.newPassword) {
-        this.$message.warning('请填写完整信息')
-        return
-      }
-      if (this.pwdForm.newPassword.length < 6) {
-        this.$message.warning('新密码至少6位')
-        return
-      }
-      this.pwdLoading = true
-      try {
-        const res = await api.post(`/weekly-assistant/user/change-password`, {
-          old_password: this.pwdForm.oldPassword,
-          new_password: this.pwdForm.newPassword
-        })
-        if (res.data.code === SUCCESS_CODE) {
-          this.$message.success('密码修改成功')
-          this.profileVisible = false
-          this.pwdForm = { oldPassword: '', newPassword: '' }
-        }
-      } catch {} finally {
-        this.pwdLoading = false
-      }
-    },
-    logout() {
-      this.$store.dispatch('auth/logout')
-      this.$router.push('/login')
-    }
+
   }
 }
 </script>
