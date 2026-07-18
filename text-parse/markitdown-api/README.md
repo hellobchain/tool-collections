@@ -242,4 +242,11 @@ axios.post('http://localhost:8001/convert', form, {
 .catch(err => console.error('失败：', err.response?.data));
 ```
 
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+| 镜像      | 地址                                         |
+| ------- | ------------------------------------------ |
+| **清华**  | `https://pypi.tuna.tsinghua.edu.cn/simple` |
+| **阿里云** | `https://mirrors.aliyun.com/pypi/simple`   |
+| **豆瓣**  | `https://pypi.doubanio.com/simple`         |
+| **中科大** | `https://pypi.mirrors.ustc.edu.cn/simple`  |
 ---

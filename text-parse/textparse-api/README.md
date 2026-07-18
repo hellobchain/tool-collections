@@ -11,3 +11,12 @@ curl -X POST http://localhost:5001/v1/convert/file/async \
 
 # 查询任务状态
 curl http://localhost:5001/v1/status/{task_id}
+
+
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+| 镜像      | 地址                                         |
+| ------- | ------------------------------------------ |
+| **清华**  | `https://pypi.tuna.tsinghua.edu.cn/simple` |
+| **阿里云** | `https://mirrors.aliyun.com/pypi/simple`   |
+| **豆瓣**  | `https://pypi.doubanio.com/simple`         |
+| **中科大** | `https://pypi.mirrors.ustc.edu.cn/simple`  |

@@ -39,12 +39,12 @@ func main() {
 	}))
 
 	// 健康检查
-	r.GET("/health", func(c *gin.Context) {
+	r.GET("/weekly-assistant/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
 
 	// 认证路由（无需token）
-	authGroup := r.Group("/api/auth")
+	authGroup := r.Group("/weekly-assistant/auth")
 	{
 		authGroup.POST("/register", handlers.Register)
 		authGroup.POST("/login", handlers.Login)
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// 业务路由（需要token）
-	apiGroup := r.Group("/api")
+	apiGroup := r.Group("/weekly-assistant")
 	apiGroup.Use(middleware.AuthMiddleware())
 	{
 		// Week
