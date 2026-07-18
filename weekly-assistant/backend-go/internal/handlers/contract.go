@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"math"
+	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -478,13 +479,13 @@ func ExportReport(c *gin.Context) {
 
 	var buf bytes.Buffer
 	writeReportContent(&buf, &review, items, format)
-
+	trueFileName := strings.TrimSuffix(review.FileName, filepath.Ext(review.FileName))
+	trueFileName = fmt.Sprintf("审查报告_%s.%s", trueFileName, ext)
+	c.Writer.WriteHeader(http.StatusOK)
+	c.Header("Accept-charset", "utf-8")
+	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename=%s`, utils.PercentEncode(trueFileName)))
 	c.Header("Content-Type", contentType)
-	if strings.HasSuffix(review.FileName, ext) {
-		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="审查报告_%s"`, review.FileName))
-	} else {
-		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="审查报告_%s.%s"`, review.FileName, ext))
-	}
+	c.Header("Access-Control-Expose-Headers", "Content-Disposition")
 	c.String(200, buf.String())
 }
 
@@ -1153,7 +1154,7 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 			if itemData.RuleName == "" {
 				itemData.RuleName = name
 			}
-
+			itemData.Level = strings.ToLower(itemData.Level)
 			item := models.ContractReviewItem{
 				ReviewID:     review.ID,
 				Level:        itemData.Level,
@@ -1167,7 +1168,6 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 				SortOrder:    i,
 			}
 			database.DB.Create(&item)
-
 			switch itemData.Level {
 			case "high":
 				review.HighRisk++
@@ -1377,7 +1377,8 @@ func writeTextReport(w io.Writer, review *models.ContractReview, items []models.
 	fmt.Fprintf(w, "==============================\n\n")
 
 	for i, item := range items {
-		fmt.Fprintf(w, "%d. [%s] ", i+1, strings.ToUpper(item.Level))
+		levelLabel := toLevelLabel(item.Level)
+		fmt.Fprintf(w, "%d. [%s] ", i+1, levelLabel)
 		if item.Section != "" {
 			fmt.Fprintf(w, "第%s条 ", item.Section)
 		}
@@ -1392,7 +1393,7 @@ func writeTextReport(w io.Writer, review *models.ContractReview, items []models.
 		if item.OriginalText != "" {
 			fmt.Fprintf(w, "   原文：%s\n", item.OriginalText)
 		}
-		fmt.Fprintf(w, "   状态：%s\n\n", item.Status)
+		fmt.Fprintf(w, "   状态：%s\n\n", toStatusLabel(item.Status))
 	}
 }
 
@@ -1401,6 +1402,34 @@ func writeExcelReport(w io.Writer, review *models.ContractReview, items []models
 	fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n\n", review.FileName, review.ContractTypeLabel, review.PositionLabel, review.ReviewStartTime, review.ReviewEndTime, review.Conclusion)
 	fmt.Fprintf(w, "风险等级\t条款\t规则名称\t问题描述\t修改建议\t法律依据\t原文\t状态\n")
 	for _, item := range items {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", item.Level, item.Section, item.RuleName, item.Description, item.Suggestion, item.LawRef, item.OriginalText, item.Comment)
+		levelLabel := toLevelLabel(item.Level)
+		statusLabel := toStatusLabel(item.Status)
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n", levelLabel, item.Section, item.RuleName, item.Description, item.Suggestion, item.LawRef, item.OriginalText, statusLabel)
 	}
+}
+
+func toLevelLabel(level string) string {
+	levelLabel := strings.ToLower(level)
+	switch levelLabel {
+	case "high":
+		levelLabel = "高风险"
+	case "medium":
+		levelLabel = "中风险"
+	default:
+		levelLabel = "低风险"
+	}
+	return levelLabel
+}
+
+func toStatusLabel(status string) string {
+	statusLabel := strings.ToLower(status)
+	switch statusLabel {
+	case "open":
+		statusLabel = "公开"
+	case "ignored":
+		statusLabel = "已忽略"
+	default:
+		statusLabel = "已处理"
+	}
+	return "-"
 }

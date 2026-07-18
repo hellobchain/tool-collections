@@ -65,7 +65,6 @@
               <el-button type="text" size="mini" icon="el-icon-download">导出</el-button>
               <el-dropdown-menu slot="dropdown">
                 <el-dropdown-item command="word">Word</el-dropdown-item>
-                <el-dropdown-item command="pdf">PDF</el-dropdown-item>
                 <el-dropdown-item command="excel">Excel</el-dropdown-item>
               </el-dropdown-menu>
             </el-dropdown>
@@ -201,7 +200,7 @@ export default {
       const { exportReport } = await import('@/api/contract')
       try {
         const res = await exportReport(row.id || row.report_id, format)
-        const extMap = { word: 'docx', pdf: 'pdf', excel: 'xlsx' }
+        const extMap = { word: 'docx', excel: 'xlsx' }
         const blob = res.data
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
@@ -212,7 +211,6 @@ export default {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
       } catch {
-        this.$message.error('导出失败')
       }
     },
     handleDelete(row) {

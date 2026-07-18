@@ -128,7 +128,6 @@
               <span class="overview-title">审查报告：{{ report.file_name || report.name || '' }}</span>
               <div class="overview-actions">
                 <el-button size="mini" icon="el-icon-download" @click="handleExport('word')">Word</el-button>
-                <el-button size="mini" icon="el-icon-download" @click="handleExport('pdf')">PDF</el-button>
                 <el-button size="mini" icon="el-icon-download" @click="handleExport('excel')">Excel</el-button>
               </div>
             </div>
@@ -478,7 +477,7 @@ export default {
       const reportId = this.report?.id
       if (!reportId) return
       this.$store.dispatch('contract/exportReport', { reportId, format }).then(blob => {
-        const extMap = { word: 'docx', pdf: 'pdf', excel: 'xlsx' }
+        const extMap = { word: 'docx', excel: 'xlsx' }
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -487,7 +486,7 @@ export default {
         a.click()
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
-      }).catch(() => this.$message.error('导出失败'))
+      }).catch()
     },
     handleBackToUpload() {
       this.$store.commit('contract/RESET_REVIEW')
