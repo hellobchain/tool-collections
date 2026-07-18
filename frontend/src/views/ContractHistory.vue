@@ -58,9 +58,17 @@
             <el-tag :type="conclusionType(row.conclusion)" size="mini">{{ row.conclusion || '-' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="120" fixed="right">
+        <el-table-column label="操作" width="170" fixed="right">
           <template slot-scope="{ row }">
             <el-button type="text" size="mini" icon="el-icon-view" @click="viewReport(row)">查看</el-button>
+            <el-dropdown size="mini" trigger="click" @command="cmd => handleExport(row, cmd)">
+              <el-button type="text" size="mini" icon="el-icon-download">导出</el-button>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item command="word">Word</el-dropdown-item>
+                <el-dropdown-item command="pdf">PDF</el-dropdown-item>
+                <el-dropdown-item command="excel">Excel</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
             <el-button type="text" size="mini" icon="el-icon-delete" style="color:#999" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -113,6 +121,7 @@
             <template slot-scope="{ row }">
               <span v-if="row.status==='resolved'" style="color:#67c23a">已处理</span>
               <span v-else-if="row.status==='ignored'" style="color:#999">已忽略</span>
+              <span v-else-if="row.status==='open'" style="color:green">公开</span>
               <span v-else>-</span>
             </template>
           </el-table-column>
@@ -186,6 +195,24 @@ export default {
         this.detailVisible = true
       } catch {
         this.$message.error('获取报告详情失败')
+      }
+    },
+    async handleExport(row, format) {
+      const { exportReport } = await import('@/api/contract')
+      try {
+        const res = await exportReport(row.id || row.report_id, format)
+        const extMap = { word: 'docx', pdf: 'pdf', excel: 'xlsx' }
+        const blob = res.data
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `审查报告_${row.file_name || 'report'}.${extMap[format] || format}`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      } catch {
+        this.$message.error('导出失败')
       }
     },
     handleDelete(row) {

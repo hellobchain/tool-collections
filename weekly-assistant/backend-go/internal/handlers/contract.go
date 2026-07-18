@@ -480,7 +480,11 @@ func ExportReport(c *gin.Context) {
 	writeReportContent(&buf, &review, items, format)
 
 	c.Header("Content-Type", contentType)
-	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="审查报告_%s.%s"`, review.FileName, ext))
+	if strings.HasSuffix(review.FileName, ext) {
+		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="审查报告_%s"`, review.FileName))
+	} else {
+		c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename="审查报告_%s.%s"`, review.FileName, ext))
+	}
 	c.String(200, buf.String())
 }
 
