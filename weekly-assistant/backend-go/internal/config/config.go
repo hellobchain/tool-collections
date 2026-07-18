@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	"log"
 	"os"
 	"strconv"
 
+	"github.com/hellobchain/wswlog/wlogging"
 	"github.com/joho/godotenv"
 )
+
+var slog = wlogging.MustGetLoggerWithoutName()
 
 type Config struct {
 	DBHost     string
@@ -36,6 +38,8 @@ type Config struct {
 	MinioRegion    string
 	MinioIsS3      bool
 
+	CronSchedule string
+
 	Port int
 
 	InitUser InitUser
@@ -60,7 +64,7 @@ func LoadConfig() {
 		}
 	}
 	if !loaded {
-		log.Println("Warning: no .env file found, using environment variables")
+		slog.Warn("Warning: no .env file found, using environment variables")
 	}
 
 	port, _ := strconv.Atoi(getEnv("PORT", "8000"))
@@ -96,6 +100,8 @@ func LoadConfig() {
 		MinioRegion:    getEnv("MINIO_REGION", "us-east-1"),
 		MinioIsS3:      minioIsS3,
 
+		CronSchedule: getEnv("CRON_SCHEDULE", "0 15 * * 5"),
+
 		Port: port,
 	}
 
@@ -104,7 +110,7 @@ func LoadConfig() {
 		if _, err := rand.Read(key); err == nil {
 			AppConfig.JWTSecret = hex.EncodeToString(key)
 		}
-		log.Printf("[WARNING] JWT_SECRET 未设置，已自动生成随机密钥。注意：服务重启后所有 token 将失效")
+		slog.Warn("[WARNING] JWT_SECRET 未设置，已自动生成随机密钥。注意：服务重启后所有 token 将失效")
 	}
 
 	if AppConfig.EncryptionKey == "" {
@@ -122,7 +128,7 @@ func LoadConfig() {
 	initUser := getEnv("INIT_USER_USERNAME", "")
 
 	if initEmail == "" || initPwd == "" || initUser == "" {
-		log.Println("[WARNING] 未设置 INIT_USER_EMAIL/PASSWORD/USERNAME，不会创建初始化用户")
+		slog.Warn("[WARNING] 未设置 INIT_USER_EMAIL/PASSWORD/USERNAME，不会创建初始化用户")
 	} else {
 		AppConfig.InitUser = InitUser{
 			Email:    initEmail,
@@ -149,8 +155,8 @@ func LoadConfig() {
 		safe.InitUser.Password = "***"
 	}
 	ret, _ := json.MarshalIndent(safe, "", "\t")
-	log.Println("AppConfig:", string(ret))
-	log.Println("Config loaded")
+	slog.Info("AppConfig:", string(ret))
+	slog.Info("Config loaded")
 }
 
 func getEnv(key, defaultValue string) string {

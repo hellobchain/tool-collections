@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -11,7 +10,11 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/handlers"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
+	"github.com/hellobchain/weekly-assistant/internal/services"
+	"github.com/hellobchain/wswlog/wlogging"
 )
+
+var slog = wlogging.MustGetLoggerWithoutName()
 
 func main() {
 	// 加载配置
@@ -108,7 +111,10 @@ func main() {
 		apiGroup.GET("/contract/v1/report/:reportId/export", handlers.ExportReport)
 	}
 
+	// 启动周报自动生成定时任务
+	services.StartAutoWeeklyScheduler()
+
 	// 启动服务
-	log.Printf("Server starting on port %d", config.AppConfig.Port)
+	slog.Infof("Server starting on port %d", config.AppConfig.Port)
 	r.Run(":" + fmt.Sprintf("%d", config.AppConfig.Port))
 }

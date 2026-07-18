@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"log"
 	"sync"
 
 	"github.com/hellobchain/oss-go-sdk/common/models"
@@ -30,7 +29,7 @@ func GetOssClient() ossclient.OssClient {
 			IsS3:            cfg.MinioIsS3,
 		}
 		var err error
-		log.Println("Using OSS storage,", cfg.SaveType)
+		slog.Infof("Using OSS storage: %s", cfg.SaveType)
 		switch cfg.SaveType {
 		case constants.LOCAL_SAVE_TYPE:
 			clientConfig = &models.Config{
@@ -42,12 +41,12 @@ func GetOssClient() ossclient.OssClient {
 		case constants.OSS_ALIYUN_SAVE_TYPE:
 			ossClient, err = impl.NewAliClient(clientConfig)
 		default:
-			log.Fatalf("Invalid save type: %s", cfg.SaveType)
+			slog.Fatalf("Invalid save type: %s", cfg.SaveType)
 		}
 		if err != nil {
-			log.Fatalf("Failed to init OSS client: %v", err)
+			slog.Fatalf("Failed to init OSS client: %v", err)
 		}
-		log.Printf("OSS client initialized: endpoint=%s bucket=%s", cfg.MinioEndpoint, cfg.MinioBucket)
+		slog.Infof("OSS client initialized: endpoint=%s bucket=%s", cfg.MinioEndpoint, cfg.MinioBucket)
 	})
 	return ossClient
 }

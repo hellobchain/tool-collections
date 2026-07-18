@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -107,7 +106,7 @@ func prepareDraft(c *gin.Context, req models.GenerateDraftRequest) (*draftContex
 		First(&lastReport).Error == nil {
 		var items []models.CarryoverResponse
 		if err := json.Unmarshal([]byte(lastReport.CarryoverFromPrev), &items); err != nil {
-			log.Printf("解析继承数据失败: %v", err)
+			slog.Errorf("解析继承数据失败: %v", err)
 		}
 		for _, item := range items {
 			carryover = append(carryover, map[string]interface{}{
@@ -149,7 +148,7 @@ func GetWeekStatus(c *gin.Context) {
 	nextWeekPlan := []models.CarryoverResponse{}
 	if isFinalized && report.NextWeekPlan != "" {
 		if err := json.Unmarshal([]byte(report.NextWeekPlan), &nextWeekPlan); err != nil {
-			log.Printf("解析下周计划失败: %v", err)
+			slog.Errorf("解析下周计划失败: %v", err)
 		}
 	}
 
@@ -159,7 +158,7 @@ func GetWeekStatus(c *gin.Context) {
 	if database.DB.Where("user_id = ? AND week_start = ?", userID, lastWeek).
 		First(&lastReport).Error == nil {
 		if err := json.Unmarshal([]byte(lastReport.CarryoverFromPrev), &carryover); err != nil {
-			log.Printf("解析继承数据失败: %v", err)
+			slog.Errorf("解析继承数据失败: %v", err)
 		}
 	}
 
@@ -167,7 +166,7 @@ func GetWeekStatus(c *gin.Context) {
 	if err := database.DB.Model(&models.Fragment{}).
 		Where("user_id = ? AND week_start = ? AND is_carried = true", userID, weekStart).
 		Count(&carriedCount).Error; err != nil {
-		log.Printf("查询已继承数量失败: %v", err)
+		slog.Errorf("查询已继承数量失败: %v", err)
 	}
 	hasLastReport := database.DB.Where("user_id = ? AND week_start = ?", userID, lastWeek).
 		First(&lastReport).Error == nil
@@ -220,7 +219,7 @@ func ConfirmCarryover(c *gin.Context) {
 
 	var carryoverItems []models.CarryoverResponse
 	if err := json.Unmarshal([]byte(lastReport.CarryoverFromPrev), &carryoverItems); err != nil {
-		log.Printf("解析继承数据失败: %v", err)
+		slog.Errorf("解析继承数据失败: %v", err)
 	}
 
 	keptMap := make(map[string]bool, len(req.KeptIDs))
@@ -232,7 +231,7 @@ func ConfirmCarryover(c *gin.Context) {
 		if keptMap[item.ID] {
 			userUUID, err := parseUUID(userID)
 			if err != nil {
-				log.Printf("解析用户ID失败: %v", err)
+				slog.Errorf("解析用户ID失败: %v", err)
 				continue
 			}
 			fragment := models.Fragment{
@@ -243,7 +242,7 @@ func ConfirmCarryover(c *gin.Context) {
 				IsCarried: true,
 			}
 			if err := database.DB.Create(&fragment).Error; err != nil {
-				log.Printf("创建继承碎片失败: %v", err)
+				slog.Errorf("创建继承碎片失败: %v", err)
 			}
 		}
 	}
@@ -401,7 +400,7 @@ func FinalizeWeek(c *gin.Context) {
 	var unfinalizedFragments []models.Fragment
 	if err := database.DB.Where("user_id = ? AND week_start = ? AND is_carried = ?", userID, lastWeek, true).
 		Find(&unfinalizedFragments).Error; err != nil {
-		log.Printf("查询未继承碎片失败: %v", err)
+		slog.Errorf("查询未继承碎片失败: %v", err)
 	}
 	for _, f := range unfinalizedFragments {
 		carryoverFromFragments = append(carryoverFromFragments, models.CarryoverResponse{
@@ -501,7 +500,7 @@ func ExportWeekHistory(c *gin.Context) {
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Header("Content-Disposition", "attachment; filename=weekly_reports.xlsx")
 	if err := f.Write(c.Writer); err != nil {
-		log.Printf("导出周报 Excel 失败: %v", err)
+		slog.Errorf("导出周报 Excel 失败: %v", err)
 	}
 }
 
@@ -527,7 +526,7 @@ func ListSummaries(c *gin.Context) {
 	}
 	var summaries []models.Summary
 	if err := query.Order("created_at DESC").Find(&summaries).Error; err != nil {
-		log.Printf("查询汇总列表失败: %v", err)
+		slog.Errorf("查询汇总列表失败: %v", err)
 	}
 
 	type summaryItem struct {
@@ -638,7 +637,7 @@ func GenerateSummary(c *gin.Context) {
 		First(&existing).Error; err == nil {
 		existing.Content = summary
 		if err := database.DB.Save(&existing).Error; err != nil {
-			log.Printf("保存汇总失败: %v", err)
+			slog.Errorf("保存汇总失败: %v", err)
 		}
 	} else {
 		userUUID, err := parseUUID(userID)
@@ -652,7 +651,7 @@ func GenerateSummary(c *gin.Context) {
 			PeriodValue: periodValue,
 			Content:     summary,
 		}).Error; err != nil {
-			log.Printf("创建汇总失败: %v", err)
+			slog.Errorf("创建汇总失败: %v", err)
 		}
 	}
 
@@ -677,7 +676,7 @@ func ExportSummariesHistory(c *gin.Context) {
 
 	var summaries []models.Summary
 	if err := query.Order("created_at DESC").Find(&summaries).Error; err != nil {
-		log.Printf("查询汇总历史失败: %v", err)
+		slog.Errorf("查询汇总历史失败: %v", err)
 	}
 
 	fileName := ""
@@ -704,7 +703,7 @@ func ExportSummariesHistory(c *gin.Context) {
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", fileName))
 	if err := f.Write(c.Writer); err != nil {
-		log.Printf("导出汇总 Excel 失败: %v", err)
+		slog.Errorf("导出汇总 Excel 失败: %v", err)
 	}
 }
 

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -34,7 +33,7 @@ func ListSkills(c *gin.Context) {
 		query = query.Order("sort_order ASC, created_at ASC")
 	}
 	if err := query.Find(&skills).Error; err != nil {
-		log.Printf("查询技能列表失败: %v", err)
+		slog.Errorf("查询技能列表失败: %v", err)
 	}
 
 	list := []models.SkillResponse{}

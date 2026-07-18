@@ -2,7 +2,6 @@ package database
 
 import (
 	"fmt"
-	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -11,8 +10,10 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/auth"
 	"github.com/hellobchain/weekly-assistant/internal/config"
 	"github.com/hellobchain/weekly-assistant/internal/models"
+	"github.com/hellobchain/wswlog/wlogging"
 )
 
+var slog = wlogging.MustGetLoggerWithoutName()
 var DB *gorm.DB
 
 func InitDB() {
@@ -25,7 +26,7 @@ func InitDB() {
 		Logger: logger.Default.LogMode(logger.LogLevel(cfg.DBLogLevel)),
 	})
 	if err != nil {
-		log.Fatal("Failed to connect to database:", err)
+		slog.Fatal("Failed to connect to database:", err)
 	}
 
 	// 自动迁移
@@ -43,10 +44,10 @@ func InitDB() {
 		&models.ContractReviewItem{},
 	)
 	if err != nil {
-		log.Fatal("Failed to migrate database:", err)
+		slog.Fatal("Failed to migrate database:", err)
 	}
 
-	log.Println("Database connected and migrated successfully")
+	slog.Infof("Database connected and migrated successfully")
 	InitUser()
 	InitPromptTemplates()
 }
@@ -58,28 +59,28 @@ func GetDB() *gorm.DB {
 // 初始化用户信息
 func InitUser() {
 	if config.AppConfig.InitUser.Username == "" {
-		log.Println("InitUser config not set, skipping user initialization")
+		slog.Warn("InitUser config not set, skipping user initialization")
 		return
 	}
 	if !DB.Migrator().HasTable(&models.User{}) {
-		log.Fatal("Table 'users' does not exist. Initializing user...")
+		slog.Fatal("Table 'users' does not exist. Initializing user...")
 	}
 	cfg := config.AppConfig
 	// 判断用户是否存在
 	var count int64
 	err := DB.Where("username = ?", cfg.InitUser.Username).Find(&models.User{}).Count(&count).Error
 	if err != nil {
-		log.Fatal("Failed to check user existence:", err)
+		slog.Fatal("Failed to check user existence:", err)
 	}
 	if count > 0 {
-		log.Println("User already exists. Skipping initialization.")
+		slog.Info("User already exists. Skipping initialization.")
 		return
 	}
-	log.Println("Initializing user...")
+	slog.Info("Initializing user...")
 	// 加密密码
 	hashedPwd, err := auth.HashPassword(cfg.InitUser.Password)
 	if err != nil {
-		log.Fatal("Failed to hash password:", err)
+		slog.Fatal("Failed to hash password:", err)
 	}
 	user := models.User{
 		Email:        cfg.InitUser.Email,
@@ -87,20 +88,20 @@ func InitUser() {
 		Username:     cfg.InitUser.Username,
 	}
 	if err := DB.Create(&user).Error; err != nil {
-		log.Fatal("Failed to create user:", err)
+		slog.Fatal("Failed to create user:", err)
 	}
-	log.Println("User initialized successfully")
+	slog.Info("User initialized successfully")
 }
 
 func InitPromptTemplates() {
 	if !DB.Migrator().HasTable(&models.PromptTemplate{}) {
-		log.Fatal("Table 'prompt_templates' does not exist. Initializing prompt templates...")
+		slog.Fatal("Table 'prompt_templates' does not exist. Initializing prompt templates...")
 	}
 
 	var count int64
 	DB.Model(&models.PromptTemplate{}).Where("user_id IS NULL").Count(&count)
 	if count > 0 {
-		log.Println("System prompt templates already exist. Skipping initialization.")
+		slog.Info("System prompt templates already exist. Skipping initialization.")
 		return
 	}
 
@@ -161,5 +162,5 @@ func InitPromptTemplates() {
 		},
 	}
 	DB.CreateInBatches(templates, len(templates))
-	log.Println("System prompt templates initialized successfully")
+	slog.Info("System prompt templates initialized successfully")
 }

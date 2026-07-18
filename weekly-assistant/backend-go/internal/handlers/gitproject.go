@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -38,7 +37,7 @@ func ListGitProjects(c *gin.Context) {
 		query = query.Order("created_at DESC")
 	}
 	if err := query.Find(&projects).Error; err != nil {
-		log.Printf("查询项目列表失败: %v", err)
+		slog.Errorf("查询项目列表失败: %v", err)
 	}
 
 	items := []models.GitProjectResponse{}

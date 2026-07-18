@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"log"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -40,7 +39,7 @@ func GetPromptTemplates(c *gin.Context) {
 
 	var templates []models.PromptTemplate
 	if err := query.Find(&templates).Error; err != nil {
-		log.Printf("查询模板列表失败: %v", err)
+		slog.Errorf("查询模板列表失败: %v", err)
 	}
 
 	responses := []models.PromptTemplateResponse{}

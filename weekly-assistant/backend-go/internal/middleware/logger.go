@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
-	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hellobchain/wswlog/wlogging"
 )
 
+var slog = wlogging.MustGetLoggerWithoutName()
 var sensitiveKeys = []string{"password", "token", "refresh_token", "old_password", "new_password"}
 
 func maskSensitive(body []byte) []byte {
@@ -38,9 +39,9 @@ func RequestLogger() gin.HandlerFunc {
 		// 记录请求路径
 		if method == "GET" {
 			if query != "" {
-				log.Printf("[%s] %s?%s", method, path, query)
+				slog.Infof("[%s] %s?%s", method, path, query)
 			} else {
-				log.Printf("[%s] %s", method, path)
+				slog.Infof("[%s] %s", method, path)
 			}
 			c.Next()
 			return
@@ -51,7 +52,7 @@ func RequestLogger() gin.HandlerFunc {
 
 		// 如果是文件上传，只记录路径，不读取body
 		if isMultipart {
-			log.Printf("[%s] %s (file upload, body omitted)", method, path)
+			slog.Infof("[%s] %s (file upload, body omitted)", method, path)
 			c.Next()
 			return
 		}
@@ -59,7 +60,7 @@ func RequestLogger() gin.HandlerFunc {
 		// 非文件上传，读取并记录body
 		bodyBytes, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			log.Printf("[%s] %s - read body error: %v", method, path, err)
+			slog.Errorf("[%s] %s - read body error: %v", method, path, err)
 			c.Next()
 			return
 		}
@@ -67,9 +68,9 @@ func RequestLogger() gin.HandlerFunc {
 
 		if len(bodyBytes) > 0 {
 			masked := maskSensitive(bodyBytes)
-			log.Printf("[%s] %s body: %s", method, path, string(masked))
+			slog.Infof("[%s] %s body: %s", method, path, string(masked))
 		} else {
-			log.Printf("[%s] %s", method, path)
+			slog.Infof("[%s] %s", method, path)
 		}
 
 		c.Next()

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -113,7 +112,7 @@ func FetchGitLabCommits(baseURL, token, projectID, branch, email, startDate, end
 			msg = c.Title
 		}
 		if email != "" && c.AuthorEmail != email {
-			log.Printf("GitLab: 忽略非 %s 而是 %s 的提交 %s\n", email, c.AuthorEmail, c.ID)
+			slog.Errorf("GitLab: 忽略非 %s 而是 %s 的提交 %s", email, c.AuthorEmail, c.ID)
 			continue
 		}
 		result = append(result, map[string]interface{}{
@@ -124,6 +123,6 @@ func FetchGitLabCommits(baseURL, token, projectID, branch, email, startDate, end
 		})
 	}
 
-	log.Printf("GitLab: 从 %s 拉取 %s 的 %d 条 commit (%s ~ %s)", projectID, email, len(result), startDate, endDate)
+	slog.Infof("GitLab: 从 %s 拉取 %s 的 %d 条 commit (%s ~ %s)", projectID, email, len(result), startDate, endDate)
 	return result, nil
 }

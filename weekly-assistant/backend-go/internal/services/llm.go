@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -90,7 +89,7 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 		return
 	}
 
-	log.Println("LLM流式请求:", string(jsonData))
+	slog.Infof("LLM流式请求: %s", string(jsonData))
 
 	req, err := http.NewRequest("POST", s.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
 	if err != nil {
@@ -103,7 +102,7 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 
 	resp, err := newStreamClient().Do(req)
 	if err != nil {
-		log.Println("stream request error:", err)
+		slog.Errorf("LLM流式请求错误: %v", err)
 		ch <- s.generateFallback(nil, nil)
 		return
 	}
@@ -114,10 +113,10 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 		line, err := reader.ReadString('\n')
 		if err != nil {
 			if err == io.EOF {
-				log.Println("stream EOF normal exit")
+				slog.Infof("LLM流式请求: stream EOF normal exit")
 				break
 			} else {
-				log.Println("read error:", err)
+				slog.Errorf("LLM流式请求错误: %v", err)
 				errMsg := fmt.Sprintf("LLM调用失败: %v", err)
 				ch <- errMsg
 				break
@@ -126,10 +125,10 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 		if line == "" || !strings.HasPrefix(line, "data: ") {
 			continue
 		}
-		log.Println("stream:", line)
+		slog.Infof("LLM流式请求: %s", line)
 		data := strings.TrimPrefix(line, "data: ")
 		if data == "[DONE]" {
-			log.Println("done")
+			slog.Infof("LLM流式请求: done")
 			break
 		}
 		var streamResp struct {
@@ -146,7 +145,7 @@ func (s *LLMService) GenerateDraftStream(systemPrompt, userPrompt string, ch cha
 			content := streamResp.Choices[0].Delta.Content
 			contentJsonByte, err := json.Marshal(content)
 			if err != nil {
-				log.Println("json marshal error:", err)
+				slog.Errorf("LLM流式请求: json marshal error: %v", err)
 				ch <- content
 			} else {
 				ch <- string(contentJsonByte)
@@ -175,15 +174,15 @@ func (s *LLMService) GenerateLlmWithPrompt(systemPrompt, userPrompt string) (str
 func (s *LLMService) doChatRequest(reqBody ChatRequest) (string, error) {
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		log.Printf("LLM请求序列化失败: %v", err)
+		slog.Errorf("LLM请求序列化失败: %v", err)
 		return "", err
 	}
 
-	log.Println("LLM请求:", string(jsonData))
+	slog.Infof("LLM请求: %s", string(jsonData))
 
 	req, err := http.NewRequest("POST", s.baseURL+"/chat/completions", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("创建LLM请求失败: %v", err)
+		slog.Errorf("创建LLM请求失败: %v", err)
 		return "", err
 	}
 
@@ -192,25 +191,25 @@ func (s *LLMService) doChatRequest(reqBody ChatRequest) (string, error) {
 
 	resp, err := s.client.Do(req)
 	if err != nil {
-		log.Printf("LLM调用失败: %v", err)
+		slog.Errorf("LLM调用失败: %v", err)
 		return "", err
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("读取LLM响应失败: %v", err)
+		slog.Errorf("读取LLM响应失败: %v", err)
 		return "", err
 	}
 
 	var chatResp ChatResponse
 	if err := json.Unmarshal(body, &chatResp); err != nil {
-		log.Printf("解析LLM响应失败: %v", err)
+		slog.Errorf("解析LLM响应失败: %v", err)
 		return "", err
 	}
 
 	if chatResp.Error != nil {
-		log.Printf("LLM返回错误: %s", chatResp.Error.Message)
+		slog.Errorf("LLM返回错误: %s", chatResp.Error.Message)
 		return "", fmt.Errorf("LLM API error: %s", chatResp.Error.Message)
 	}
 
@@ -276,7 +275,7 @@ func (s *LLMService) ExtractNextWeekPlan(weekStart, content string) []map[string
 
 	result, err := s.doChatRequest(reqBody)
 	if err != nil {
-		log.Printf("LLM请求失败: %v", err)
+		slog.Errorf("LLM请求失败: %v", err)
 		return items
 	}
 
@@ -290,7 +289,7 @@ func (s *LLMService) ExtractNextWeekPlan(weekStart, content string) []map[string
 
 	var parsed []map[string]interface{}
 	if err := json.Unmarshal([]byte(result), &parsed); err != nil {
-		log.Printf("ExtractNextWeekPlan 解析LLM返回失败: %v, 原始返回: %s", err, result)
+		slog.Errorf("ExtractNextWeekPlan 解析LLM返回失败: %v, 原始返回: %s", err, result)
 		return items
 	}
 

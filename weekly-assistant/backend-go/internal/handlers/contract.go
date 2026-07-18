@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"net/http"
 	"path/filepath"
@@ -24,7 +23,10 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/models"
 	"github.com/hellobchain/weekly-assistant/internal/services"
 	"github.com/hellobchain/weekly-assistant/internal/utils"
+	"github.com/hellobchain/wswlog/wlogging"
 )
+
+var slog = wlogging.MustGetLoggerWithoutName()
 
 func UploadContract(c *gin.Context) {
 	userID := middleware.GetUserID(c)
@@ -32,7 +34,7 @@ func UploadContract(c *gin.Context) {
 
 	file, header, err := c.Request.FormFile("file")
 	if err != nil {
-		log.Printf("Failed to parse form: %v", err)
+		slog.Errorf("Failed to parse form: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, "请提供上传文件")
 		return
 	}
@@ -40,20 +42,20 @@ func UploadContract(c *gin.Context) {
 
 	ext := strings.ToLower(filepath.Ext(header.Filename))
 	if ext != ".pdf" && ext != ".doc" && ext != ".docx" && ext != ".txt" {
-		log.Printf("Invalid file type: %s", ext)
+		slog.Errorf("Invalid file type: %s", ext)
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, "仅支持 .pdf .doc .docx 格式")
 		return
 	}
 
 	if header.Size > constants.MAX_FILE_SIZE {
-		log.Printf("Invalid file size: %d", header.Size)
+		slog.Errorf("Invalid file size: %d", header.Size)
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, "文件大小不能超过 20MB")
 		return
 	}
 
 	data, err := io.ReadAll(file)
 	if err != nil {
-		log.Printf("Failed to read file: %v", err)
+		slog.Errorf("Failed to read file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "读取文件失败")
 		return
 	}
@@ -65,7 +67,7 @@ func UploadContract(c *gin.Context) {
 	ctx := context.Background()
 
 	if err := services.UploadContractFile(ctx, fileSavePath, data); err != nil {
-		log.Printf("Failed to upload contract file: %v", err)
+		slog.Errorf("Failed to upload contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "文件上传至存储失败")
 		return
 	}
@@ -81,7 +83,7 @@ func UploadContract(c *gin.Context) {
 		Status:       "parsed",
 	}
 	if err := database.DB.Create(&cf).Error; err != nil {
-		log.Printf("Failed to save contract file record: %v", err)
+		slog.Errorf("Failed to save contract file record: %v", err)
 		services.DeleteContractFile(ctx, fileSavePath)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "保存文件记录失败")
 		return
@@ -103,7 +105,7 @@ func DeleteContractFile(c *gin.Context) {
 	id := c.Param("id")
 	var cf models.ContractFile
 	if err := database.DB.Where("id = ? AND user_id = ?", id, userUUID).First(&cf).Error; err != nil {
-		log.Printf("Failed to find contract file: %v", err)
+		slog.Errorf("Failed to find contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "文件不存在")
 		return
 	}
@@ -123,20 +125,20 @@ func GetContractText(c *gin.Context) {
 	id := c.Param("id")
 	var cf models.ContractFile
 	if err := database.DB.Where("id = ? AND user_id = ?", id, userUUID).First(&cf).Error; err != nil {
-		log.Printf("Failed to find contract file: %v", err)
+		slog.Errorf("Failed to find contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "文件不存在")
 		return
 	}
 
 	if cf.FileSavePath == "" {
-		log.Printf("Invalid contract file: %s", cf.FileSavePath)
+		slog.Errorf("Invalid contract file: %s", cf.FileSavePath)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "文件存储信息缺失")
 		return
 	}
 
 	data, err := services.DownloadContractFile(context.Background(), cf.FileSavePath)
 	if err != nil {
-		log.Printf("Failed to download contract file: %v", err)
+		slog.Errorf("Failed to download contract file: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeServerError, "获取文件内容失败")
 		return
 	}
@@ -247,7 +249,7 @@ func GetReviewProgress(c *gin.Context) {
 	taskID := c.Param("taskId")
 	var review models.ContractReview
 	if err := database.DB.Where("id = ? AND user_id = ?", taskID, userUUID).First(&review).Error; err != nil {
-		log.Printf("Failed to find contract review: %v", err)
+		slog.Errorf("Failed to find contract review: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "审查任务不存在")
 		return
 	}
@@ -269,7 +271,7 @@ func GetReviewReport(c *gin.Context) {
 	reportID := c.Param("reportId")
 	var review models.ContractReview
 	if err := database.DB.Where("id = ? AND user_id = ?", reportID, userUUID).First(&review).Error; err != nil {
-		log.Printf("Failed to find contract review: %v", err)
+		slog.Errorf("Failed to find contract review: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "报告不存在")
 		return
 	}
@@ -327,14 +329,14 @@ func UpdateReviewItem(c *gin.Context) {
 
 	var review models.ContractReview
 	if err := database.DB.Where("id = ? AND user_id = ?", reportID, userUUID).First(&review).Error; err != nil {
-		log.Printf("Failed to find contract review: %v", err)
+		slog.Errorf("Failed to find contract review: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "报告不存在")
 		return
 	}
 
 	var item models.ContractReviewItem
 	if err := database.DB.Where("id = ? AND review_id = ?", itemID, review.ID).First(&item).Error; err != nil {
-		log.Printf("Failed to find contract review item: %v", err)
+		slog.Errorf("Failed to find contract review item: %v", err)
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "审查项不存在")
 		return
 	}
@@ -510,7 +512,7 @@ func extractText(filename string, data []byte) string {
 func extractDocxText(data []byte) string {
 	reader, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		log.Printf("Failed to read docx file: %v", err)
+		slog.Errorf("Failed to read docx file: %v", err)
 		return ""
 	}
 	var parts []string
@@ -518,7 +520,7 @@ func extractDocxText(data []byte) string {
 		if f.Name == "word/document.xml" {
 			rc, err := f.Open()
 			if err != nil {
-				log.Printf("Failed to open docx file: %v", err)
+				slog.Errorf("Failed to open docx file: %v", err)
 				continue
 			}
 			defer rc.Close()
@@ -1112,11 +1114,11 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 
 		result, err := llm.GenerateLlmWithPrompt(systemPrompt, rulePrompt)
 		if err != nil {
-			log.Printf("Failed to contract review for rule %s: %s", name, err)
+			slog.Errorf("Failed to contract review for rule %s: %s", name, err)
 			continue
 		}
 
-		log.Printf("Contract review result for rule %s: %s", name, result)
+		slog.Infof("Contract review result for rule %s: %s", name, result)
 
 		result = strings.TrimSpace(result)
 		result = strings.TrimPrefix(result, "```json")
@@ -1125,7 +1127,7 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 		result = strings.TrimSpace(result)
 
 		if result == "" || result == "null" {
-			log.Printf("No problem found for rule %s", name)
+			slog.Infof("No problem found for rule %s", name)
 			continue
 		}
 
@@ -1140,12 +1142,12 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 		}
 
 		if err := json.Unmarshal([]byte(result), &itemDatas); err != nil {
-			log.Printf("Failed to parse contract review for rule %s: %s", name, err)
+			slog.Errorf("Failed to parse contract review for rule %s: %s", name, err)
 			continue
 		}
 		for _, itemData := range itemDatas {
 			if itemData.Description == "" {
-				log.Printf("No description found for rule %s", name)
+				slog.Errorf("No description found for rule %s", name)
 				continue
 			}
 			if itemData.Level == "" {
