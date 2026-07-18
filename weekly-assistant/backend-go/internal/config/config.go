@@ -43,6 +43,9 @@ type Config struct {
 	Port int
 
 	InitUser InitUser
+
+	// gin
+	GinMode string
 }
 
 // 初始化用户
@@ -102,7 +105,8 @@ func LoadConfig() {
 
 		CronSchedule: getEnv("CRON_SCHEDULE", "0 15 * * 5"),
 
-		Port: port,
+		Port:    port,
+		GinMode: getEnv("GIN_MODE", "release"),
 	}
 
 	if AppConfig.JWTSecret == "" {
