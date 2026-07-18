@@ -10,6 +10,7 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/handlers"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
+	"github.com/hellobchain/weekly-assistant/internal/middleware/ginlog"
 	"github.com/hellobchain/weekly-assistant/internal/services"
 	"github.com/hellobchain/wswlog/wlogging"
 )
@@ -23,10 +24,10 @@ func main() {
 	// 初始化数据库
 	database.InitDB()
 
-	// 创建Gin引擎（不用 gin.Default()，避免重复日志）
+	// 创建Gin引擎
 	r := gin.New()
 	r.Use(gin.Recovery())
-
+	r.Use(ginlog.Logger()) // 设置路由日志
 	// CORS配置
 	r.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:8080", "http://localhost:3000"},
@@ -35,9 +36,6 @@ func main() {
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 	}))
-
-	// 请求入参日志
-	r.Use(middleware.RequestLogger())
 
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
