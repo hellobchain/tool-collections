@@ -27,11 +27,6 @@ const router = new Router({
           component: () => import('@/views/DocumentParse.vue')
         },
         {
-          path: '/md-to-docx',
-          name: 'MdToDocx',
-          component: () => import('@/views/MdToDocx.vue')
-        },
-        {
           path: '/contract-review',
           name: 'ContractReview',
           component: () => import('@/views/ContractReview.vue')

@@ -1,49 +1,81 @@
 <template>
   <div class="document-page">
     <div class="page-header">
-      <h2>📄 文档解析</h2>
+      <h2>📄 文档转换</h2>
       <p class="page-desc">上传文档并转换为目标格式</p>
     </div>
 
-    <el-card class="upload-card">
-      <el-upload
-        :key="uploadKey"
-        ref="upload"
-        drag
-        action=""
-        :auto-upload="false"
-        :show-file-list="true"
-        :on-change="handleFileChange"
-        :on-remove="handleFileRemove"
-        :file-list="fileList"
-      >
-        <i class="el-icon-upload"></i>
-        <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
-        <div slot="tip" class="el-upload__tip">支持PDF、Word、图片等多种格式，单文件不超过 50MB</div>
-      </el-upload>
-    </el-card>
+    <el-tabs v-model="activeMode" class="mode-tabs">
+      <el-tab-pane label="格式转换" name="convert">
+        <el-card class="upload-card">
+          <el-upload
+            :key="uploadKey"
+            ref="upload"
+            drag
+            action=""
+            :auto-upload="false"
+            :show-file-list="true"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :file-list="fileList"
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
+            <div slot="tip" class="el-upload__tip">支持PDF、Word、图片等多种格式，单文件不超过 50MB</div>
+          </el-upload>
+        </el-card>
 
-    <el-card class="options-card">
-      <el-form label-width="120px" size="small">
-        <el-form-item label="目标格式">
-          <el-select v-model="toFormats" placeholder="选择转换格式">
-            <el-option label="Markdown (.md)" value="md" />
-            <el-option label="JSON (.json)" value="json" />
-            <el-option label="HTML (.html)" value="html" />
-            <el-option label="Text (.txt)" value="text" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="OCR 文字识别">
-          <el-switch v-model="doOcr" active-text="开启" inactive-text="关闭" />
-        </el-form-item>
-      </el-form>
+        <el-card class="options-card">
+          <el-form label-width="120px" size="small">
+            <el-form-item label="目标格式">
+              <el-select v-model="toFormats" placeholder="选择转换格式">
+                <el-option label="Markdown (.md)" value="md" />
+                <el-option label="JSON (.json)" value="json" />
+                <el-option label="HTML (.html)" value="html" />
+                <el-option label="Text (.txt)" value="text" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="OCR 文字识别">
+              <el-switch v-model="doOcr" active-text="开启" inactive-text="关闭" />
+            </el-form-item>
+          </el-form>
 
-      <div class="action-bar">
-        <el-button type="primary" :loading="converting" :disabled="!selectedFile" @click="handleConvert">
-          {{ converting ? '转换中...' : '开始转换' }}
-        </el-button>
-      </div>
-    </el-card>
+          <div class="action-bar">
+            <el-button type="primary" :loading="converting" :disabled="!selectedFile" @click="handleConvert">
+              {{ converting ? '转换中...' : '开始转换' }}
+            </el-button>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
+      <el-tab-pane label="MD 转 Word" name="md2docx">
+        <el-card class="upload-card">
+          <el-upload
+            ref="mdUpload"
+            drag
+            action=""
+            :auto-upload="false"
+            :show-file-list="true"
+            :on-change="handleMdFileChange"
+            :on-remove="handleMdFileRemove"
+            :file-list="mdFileList"
+            :accept="'.md'"
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将 .md 文件拖到此处，或<em>点击选择</em></div>
+            <div slot="tip" class="el-upload__tip">支持 Markdown（.md）格式，单文件不超过 20MB</div>
+          </el-upload>
+        </el-card>
+
+        <el-card class="options-card">
+          <div class="action-bar">
+            <el-button type="primary" :loading="mdConverting" :disabled="!mdSelectedFile" @click="handleMdConvert">
+              {{ mdConverting ? '转换中...' : '开始转换' }}
+            </el-button>
+          </div>
+        </el-card>
+      </el-tab-pane>
+    </el-tabs>
 
     <el-card v-if="resultFileName" class="result-card">
       <div class="result-header">
@@ -58,18 +90,25 @@
 </template>
 
 <script>
-import { convertFile } from '@/api/document'
+import { convertFile, mdFile2DocxFile } from '@/api/document'
 
 export default {
   name: 'DocumentParse',
   data() {
     return {
+      activeMode: 'convert',
+      // mode 1: format conversion
       uploadKey: 0,
       fileList: [],
       selectedFile: null,
       toFormats: 'md',
       doOcr: true,
       converting: false,
+      // mode 2: md to docx
+      mdFileList: [],
+      mdSelectedFile: null,
+      mdConverting: false,
+      // shared result
       resultBlob: null,
       resultFileName: '',
       allowedTypes: [
@@ -86,6 +125,7 @@ export default {
     }
   },
   methods: {
+    // === mode 1: format conversion ===
     handleFileRemove() {
       this.selectedFile = null
       this.fileList = []
@@ -93,23 +133,19 @@ export default {
       this.resultFileName = ''
     },
     handleFileChange(file) {
-      // 校验文件类型
       const isValidType = this.checkFileType(file);
       if (!isValidType) {
         this.$message.error('仅支持 PDF、Word 文档和图片格式！');
-        // 移除不符合的文件
         this.fileList = [];
         this.$refs.upload.clearFiles();
         return;
       }
-      // 校验文件大小（50MB）
       if (file.size > 50 * 1024 * 1024) {
         this.$message.error('文件大小不能超过 50MB！');
         this.fileList = [];
         this.$refs.upload.clearFiles();
         return;
       }
-
       this.fileList = [file]
       this.uploadKey++
       this.selectedFile = file.raw
@@ -117,15 +153,12 @@ export default {
       this.resultFileName = ''
     },
     checkFileType(file) {
-      if (this.allowedTypes.includes(file.raw.type)) {
-        return true;
-      }
-      const fileName = file.name.toLowerCase();
-      return this.allowedExtensions.some(ext => fileName.endsWith(ext));
+      if (this.allowedTypes.includes(file.raw.type)) return true
+      const fileName = file.name.toLowerCase()
+      return this.allowedExtensions.some(ext => fileName.endsWith(ext))
     },
     async handleConvert() {
       if (!this.selectedFile || !this.toFormats || !this.fileList.length) return
-
       this.converting = true
       try {
         const res = await convertFile(this.selectedFile, this.toFormats, this.doOcr)
@@ -135,8 +168,8 @@ export default {
           const reader = new FileReader()
           reader.onload = () => {
             try {
-              const err = JSON.parse(reader.result)
-              this.$message.error(err.message || err.msg || '转换失败')
+              const errData = JSON.parse(reader.result)
+              this.$message.error(errData.message || errData.msg || '转换失败')
             } catch {
               this.$message.error('转换失败')
             }
@@ -174,6 +207,63 @@ export default {
         this.converting = false
       }
     },
+    // === mode 2: md to docx ===
+    handleMdFileRemove() {
+      this.mdSelectedFile = null
+      this.mdFileList = []
+      this.resultBlob = null
+      this.resultFileName = ''
+    },
+    handleMdFileChange(file) {
+      if (!/\.md$/i.test(file.name)) {
+        this.$message.error('仅支持 .md 格式文件')
+        this.mdFileList = []
+        this.$refs.mdUpload.clearFiles()
+        return
+      }
+      if (file.size > 20 * 1024 * 1024) {
+        this.$message.error('文件大小不能超过 20MB')
+        this.mdFileList = []
+        this.$refs.mdUpload.clearFiles()
+        return
+      }
+      this.mdFileList = [file]
+      this.mdSelectedFile = file.raw
+      this.resultBlob = null
+      this.resultFileName = ''
+    },
+    async handleMdConvert() {
+      if (!this.mdSelectedFile) return
+      this.mdConverting = true
+      try {
+        const res = await mdFile2DocxFile(this.mdSelectedFile)
+        this.resultBlob = res.data
+        const baseName = this.mdSelectedFile.name.replace(/\.md$/i, '')
+        this.resultFileName = `${baseName}.docx`
+        this.mdSelectedFile = null
+        this.mdFileList = []
+        this.$refs.mdUpload.clearFiles()
+        this.$message.success('转换成功')
+      } catch (err) {
+        if (err.response?.data instanceof Blob) {
+          const reader = new FileReader()
+          reader.onload = () => {
+            try {
+              const errData = JSON.parse(reader.result)
+              this.$message.error(errData.message || errData.msg || '转换失败')
+            } catch {
+              this.$message.error('转换失败')
+            }
+          }
+          reader.readAsText(err.response.data)
+        } else {
+          this.$message.error(err.message || '请求失败')
+        }
+      } finally {
+        this.mdConverting = false
+      }
+    },
+    // === shared ===
     handleDownload() {
       if (!this.resultBlob) return
       const url = URL.createObjectURL(this.resultBlob)
@@ -232,6 +322,8 @@ export default {
 .result-card >>> .el-card__body {
   padding: 16px 32px;
 }
+.mode-tabs { padding: 0 32px; background: #fff; }
+.mode-tabs >>> .el-tabs__header { margin-bottom: 0; }
 .action-bar {
   padding-top: 8px;
 }
