@@ -1084,6 +1084,9 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 
 	for i, name := range ruleNames {
 		progress := int(math.Round(float64(i+1) / float64(totalRules) * 100))
+		if progress >= 100 {
+			progress = 99 // avoid 100%
+		}
 		database.DB.Model(review).Updates(map[string]interface{}{
 			"progress":     progress,
 			"current_rule": name,
