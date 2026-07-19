@@ -102,8 +102,9 @@ const (
 
 // ============ 日期格式 ============
 const (
-	DateFormatDate     = "2006-01-02"
-	DateFormatDateTime = "2006-01-02 15:04"
+	DateFormatDate       = "2006-01-02"
+	DateFormatDateHHMM   = "2006-01-02 15:04"
+	DateFormatTimeHHMMSS = "2006-01-02 15:04:05"
 )
 
 // ============ LLM ============

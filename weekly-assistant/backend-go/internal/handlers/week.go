@@ -379,7 +379,7 @@ func GetWeekHistory(c *gin.Context) {
 			WeekStart:     services.FormatDate(r.WeekStart),
 			Content:       r.Content,
 			NarrativeType: r.NarrativeType,
-			CreatedAt:     r.CreatedAt.Format(constants.DateFormatDateTime),
+			CreatedAt:     r.CreatedAt.Format(constants.DateFormatTimeHHMMSS),
 		}
 	}
 
@@ -494,7 +494,7 @@ func ExportWeekHistory(c *gin.Context) {
 		f.SetCellValue(sheet, fmt.Sprintf("B%d", row), services.FormatDate(r.WeekStart))
 		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), r.NarrativeType)
 		f.SetCellValue(sheet, fmt.Sprintf("D%d", row), r.Content)
-		f.SetCellValue(sheet, fmt.Sprintf("E%d", row), r.CreatedAt.Format(constants.DateFormatDateTime))
+		f.SetCellValue(sheet, fmt.Sprintf("E%d", row), r.CreatedAt.Format(constants.DateFormatTimeHHMMSS))
 	}
 
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
@@ -544,7 +544,7 @@ func ListSummaries(c *gin.Context) {
 			PeriodType:  s.PeriodType,
 			PeriodValue: s.PeriodValue,
 			Content:     s.Content,
-			CreatedAt:   s.CreatedAt.Format(constants.DateFormatDateTime),
+			CreatedAt:   s.CreatedAt.Format(constants.DateFormatTimeHHMMSS),
 		}
 		if s.PeriodType == "quarter" {
 			quarter = append(quarter, item)
@@ -697,7 +697,7 @@ func ExportSummariesHistory(c *gin.Context) {
 		row := i + 2
 		f.SetCellValue(sheet, fmt.Sprintf("A%d", row), s.PeriodValue)
 		f.SetCellValue(sheet, fmt.Sprintf("B%d", row), s.Content)
-		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), s.CreatedAt.Format(constants.DateFormatDateTime))
+		f.SetCellValue(sheet, fmt.Sprintf("C%d", row), s.CreatedAt.Format(constants.DateFormatTimeHHMMSS))
 	}
 
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

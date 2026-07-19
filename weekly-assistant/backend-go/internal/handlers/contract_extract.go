@@ -269,7 +269,7 @@ func GetExtractHistory(c *gin.Context) {
 			"field_count": len(fields),
 			"status":      t.Status,
 			"progress":    t.Progress,
-			"created_at":  t.CreatedAt.Format("2006-01-02 15:04"),
+			"created_at":  t.CreatedAt.Format(constants.DateFormatTimeHHMMSS),
 		})
 	}
 	utils.SuccessPage(c, list, total, page, pageSize)

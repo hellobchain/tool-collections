@@ -211,7 +211,7 @@ func GetDraftHistory(c *gin.Context) {
 			"id":           d.ID.String(),
 			"file_name":    d.FileName,
 			"requirements": truncateText(d.Requirements, 100),
-			"generated_at": d.GeneratedAt.Format("2006-01-02 15:04"),
+			"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
 			"content_len":  len(d.Content),
 			"status":       d.Status,
 			"progress":     d.Progress,
@@ -238,7 +238,7 @@ func GetDraftDetail(c *gin.Context) {
 		"requirements": d.Requirements,
 		"content":      d.Content,
 		"change_log":   d.ChangeLog,
-		"generated_at": d.GeneratedAt.Format("2006-01-02 15:04"),
+		"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
 		"status":       d.Status,
 		"progress":     d.Progress,
 	})
@@ -419,7 +419,7 @@ func runDraftAgent(task *draftTask) {
 	task.CurrentStep = constants.ContractDraftStatusCompletedDesc
 	task.Content = draftContent
 	task.ChangeLog = changeLog
-	task.GeneratedAt = generatedAt.Format("2006-01-02 15:04")
+	task.GeneratedAt = generatedAt.Format(constants.DateFormatTimeHHMMSS)
 	draftTasksMu.Unlock()
 
 	// Update DB record (already created in StartDraftGenerate)

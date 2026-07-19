@@ -208,7 +208,7 @@ func StartReview(c *gin.Context) {
 	standardsLabel := standardsLabel(req.Standards)
 	ruleNames := ruleNameList()
 	totalRules := len(ruleNames)
-	reviewStartTime := time.Now().Format("2006-01-02 15:04:05")
+	reviewStartTime := time.Now().Format(constants.DateFormatTimeHHMMSS)
 	review := models.ContractReview{
 		UserID:            userUUID,
 		FileName:          files[0].FileName,
@@ -1179,7 +1179,7 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 	}
 
 	conclusion := generateConclusion(review.HighRisk, review.MediumRisk)
-	reviewEndTime := time.Now().Format("2006-01-02 15:04:05")
+	reviewEndTime := time.Now().Format(constants.DateFormatTimeHHMMSS)
 
 	database.DB.Model(review).Updates(map[string]interface{}{
 		"status":          constants.ContractReviewStatusCompleted,
