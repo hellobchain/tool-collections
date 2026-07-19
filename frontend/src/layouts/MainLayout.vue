@@ -126,8 +126,16 @@ export default {
       }
     },
     async handleChangePassword() {
-      if (!this.pwdForm.oldPassword || !this.pwdForm.newPassword) {
-        this.$message.warning('请填写完整信息')
+      if (!this.pwdForm.oldPassword && !this.pwdForm.newPassword) {
+        this.$message.warning('请填写原密码和新密码')
+        return
+      }
+      if (!this.pwdForm.oldPassword) {
+        this.$message.warning('请填写原密码')
+        return
+      }
+      if (!this.pwdForm.newPassword) {
+        this.$message.warning('请填写新密码')
         return
       }
       if (this.pwdForm.newPassword.length < 6) {

@@ -76,8 +76,16 @@ export default {
       }
     },
     async handleRegister() {
-      if (!this.registerData.username || !this.registerData.password) {
-        this.$message.warning('请填写完整信息')
+      if (!this.registerData.username && !this.registerData.password) {
+        this.$message.warning('请填写用户名和密码')
+        return
+      }
+      if (!this.registerData.username) {
+        this.$message.warning('请填写用户名')
+        return
+      }
+      if (!this.registerData.password) {
+        this.$message.warning('请填写密码')
         return
       }
       if (this.registerData.password.length < 6) {

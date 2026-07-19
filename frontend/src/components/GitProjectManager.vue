@@ -116,10 +116,15 @@ export default {
       this.showForm = true
     },
     async saveProject() {
-      if (!this.form.project_id || !this.form.project_name || !this.form.base_url || !this.form.token) {
-        this.$message.warning('请填写完整信息')
+      const f = this.form
+      if (!f.project_id && !f.project_name && !f.base_url && !f.token) {
+        this.$message.warning('请填写项目ID、项目名称、远程地址和Token')
         return
       }
+      if (!f.project_id) { this.$message.warning('请填写项目ID'); return }
+      if (!f.project_name) { this.$message.warning('请填写项目名称'); return }
+      if (!f.base_url) { this.$message.warning('请填写远程地址'); return }
+      if (!f.token) { this.$message.warning('请填写Token'); return }
       this.saving = true
       try {
         const url = this.editingId ? `/weekly-assistant/git-projects/${this.editingId}` : `/weekly-assistant/git-projects`

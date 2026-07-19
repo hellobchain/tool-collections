@@ -211,10 +211,15 @@ export default {
       this.showView = true
     },
     async saveTemplate() {
-      if (!this.viewData.name || !this.viewData.system_prompt || !this.viewData.user_prompt_template || !this.viewData.prompt_type) {
-        this.$message.warning('请填写完整信息')
+      const v = this.viewData
+      if (!v.name && !v.system_prompt && !v.user_prompt_template && !v.prompt_type) {
+        this.$message.warning('请填写名称、系统提示词、用户提示词和提示词类型')
         return
       }
+      if (!v.name) { this.$message.warning('请填写模板名称'); return }
+      if (!v.prompt_type) { this.$message.warning('请选择提示词类型'); return }
+      if (!v.system_prompt) { this.$message.warning('请填写系统提示词'); return }
+      if (!v.user_prompt_template) { this.$message.warning('请填写用户提示词模板'); return }
       try {
         await promptAPI.updateTemplate(this.viewData.id, {
           name: this.viewData.name,
@@ -231,10 +236,15 @@ export default {
       }
     },
     async createTemplate() {
-      if (!this.createData.name || !this.createData.system_prompt || !this.createData.user_prompt_template || !this.createData.prompt_type) {
-        this.$message.warning('请填写完整信息')
+      const c = this.createData
+      if (!c.name && !c.system_prompt && !c.user_prompt_template && !c.prompt_type) {
+        this.$message.warning('请填写名称、系统提示词、用户提示词和提示词类型')
         return
       }
+      if (!c.name) { this.$message.warning('请填写模板名称'); return }
+      if (!c.prompt_type) { this.$message.warning('请选择提示词类型'); return }
+      if (!c.system_prompt) { this.$message.warning('请填写系统提示词'); return }
+      if (!c.user_prompt_template) { this.$message.warning('请填写用户提示词模板'); return }
       try {
         await promptAPI.createTemplate(this.createData)
         this.$message.success('创建成功')

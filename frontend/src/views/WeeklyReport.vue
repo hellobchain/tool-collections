@@ -960,10 +960,16 @@ export default {
     },
     async fetchGitLabCommits() {
       const f = this.gitlabForm
-      if (!f.base_url || !f.token || !f.project_id || !f.project_branch || !f.project_name || !f.dateRange) {
-        this.$message.warning('请填写完整配置信息')
+      if (!f.base_url && !f.token && !f.project_id && !f.project_branch && !f.project_name && !f.dateRange) {
+        this.$message.warning('请填写完整信息')
         return
       }
+      if (!f.project_id) { this.$message.warning('请填写项目ID'); return }
+      if (!f.project_name) { this.$message.warning('请填写项目名称'); return }
+      if (!f.base_url) { this.$message.warning('请填写远程地址'); return }
+      if (!f.token) { this.$message.warning('请填写Token'); return }
+      if (!f.project_branch) { this.$message.warning('请填写分支名'); return }
+      if (!f.dateRange) { this.$message.warning('请选择日期范围'); return }
       this.gitlabLoading = true
       this.gitlabCommits = []
       try {

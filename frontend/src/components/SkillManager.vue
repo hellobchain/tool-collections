@@ -117,8 +117,16 @@ export default {
       this.showEdit = true
     },
     async saveEdit() {
-      if (!this.editData.name || !this.editData.description) {
-        this.$message.warning('请填写完整信息')
+      if (!this.editData.name && !this.editData.description) {
+        this.$message.warning('请填写技能名称和描述')
+        return
+      }
+      if (!this.editData.name) {
+        this.$message.warning('请填写技能名称')
+        return
+      }
+      if (!this.editData.description) {
+        this.$message.warning('请填写技能描述')
         return
       }
       const res = await api.put(`/weekly-assistant/skills/${this.editData.id}`, {
@@ -132,8 +140,16 @@ export default {
       }
     },
     async createSkill() {
-      if (!this.createData.name || !this.createData.description) {
-        this.$message.warning('请填写完整信息')
+      if (!this.createData.name && !this.createData.description) {
+        this.$message.warning('请填写技能名称和描述')
+        return
+      }
+      if (!this.createData.name) {
+        this.$message.warning('请填写技能名称')
+        return
+      }
+      if (!this.createData.description) {
+        this.$message.warning('请填写技能描述')
         return
       }
       const res = await api.post(`/weekly-assistant/skills`, this.createData)
