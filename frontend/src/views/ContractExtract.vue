@@ -20,7 +20,7 @@
           multiple
           action=""
           :auto-upload="false"
-          :show-file-list="true"
+          :show-file-list="false"
           :on-change="handleFileChange"
           :on-remove="handleFileRemove"
           :file-list="fileList"
@@ -38,6 +38,7 @@
           <el-tag v-if="f.status==='parsed'" type="success" size="mini">就绪</el-tag>
           <el-tag v-else-if="f.status==='uploading'" type="warning" size="mini">上传中</el-tag>
           <el-tag v-else-if="f.status==='failed'" type="danger" size="mini">失败</el-tag>
+          <el-button type="text" size="mini" icon="el-icon-delete" @click="removeFile(f)" style="color:#999" />
         </div>
       </el-card>
       <div class="step-actions">
@@ -158,27 +159,22 @@ export default {
   },
   beforeDestroy() { this.stopPolling() },
   methods: {
+    removeFile(file) {
+      this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== file.id)
+      this.fileList = this.fileList.filter(f => f.id !== file.id)
+    },
     handleFileRemove() { this.uploadedFiles = []; this.fileList = [] },
     async handleFileChange(file) {
       if (!/\.docx?$/i.test(file.name)) { 
         this.$message.error('仅支持 .doc .docx'); 
-        this.uploadedFiles = []; 
-        this.fileList = [];
-        this.$refs.upload.clearFiles(); 
         return 
       }
       if (file.size > 50*1024*1024) {
          this.$message.error('文件不超过50MB'); 
-         this.uploadedFiles = [];
-         this.fileList = [];
-         this.$refs.upload.clearFiles();
          return 
       }
       if (this.uploadedFiles.length >= 1) { 
          this.$message.error('仅支持单个文件');
-         this.uploadedFiles = [];
-         this.fileList = [];
-         this.$refs.upload.clearFiles();
          return 
       }
       const raw = file.raw

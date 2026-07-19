@@ -19,7 +19,7 @@
           drag
           action=""
           :auto-upload="false"
-          :show-file-list="true"
+          :show-file-list="false"
           :on-change="handleFileChange"
           :on-remove="handleFileRemove"
           :file-list="fileList"
@@ -29,6 +29,13 @@
           <div class="el-upload__text">拖拽合同模板到此处，或<em>点击选择</em></div>
           <div slot="tip" class="el-upload__tip">支持 .doc .docx 格式，单文件不超过10MB</div>
         </el-upload>
+      </el-card>
+      <el-card v-if="fileList.length" class="file-list-card">
+        <div v-for="f in fileList" :key="f.id" class="file-item">
+          <span class="file-name">{{ f.name }}</span>
+          <span class="file-size">{{ toKB(f.size) }}</span>
+          <el-button type="text" size="mini" icon="el-icon-delete" @click="removeFile(f)" style="color:#999;"/>
+        </div>
       </el-card>
 
       <el-card class="req-card">
@@ -119,6 +126,17 @@ export default {
     this.stopPolling()
   },
   methods: {
+    toKB(bytes) {
+      if (!bytes) return '0 KB'
+      return (bytes / 1024).toFixed(2) + ' KB'
+    },
+    removeFile(file) {
+      this.fileList = this.fileList.filter(f => f.id !== file.id)
+      if (this.selectedFile && this.selectedFile.name === file.name) {
+        this.selectedFile = null
+        this.fileName = ''
+      }
+    },
     renderMd(text) {
       if (!text) return ''
       return marked.parse(text, { breaks: true })
@@ -130,20 +148,14 @@ export default {
     handleFileChange(file) {
       if (!/\.docx?$/i.test(file.name)) {
         this.$message.error('仅支持 .doc .docx 格式')
-        this.fileList = []
-        this.$refs.upload.clearFiles()
         return
       }
       if (file.size > 10 * 1024 * 1024) {
         this.$message.error('文件大小不能超过 10MB')
-        this.fileList = []
-        this.$refs.upload.clearFiles()
         return
       }
       if (this.fileList.length > 0) {
         this.$message.error('仅支持单个文件')
-        this.fileList = []
-        this.$refs.upload.clearFiles()
         return;
       }
       this.fileList = [file]
@@ -253,6 +265,11 @@ export default {
   border-bottom: 1px solid #e4e7ed;
   flex-shrink: 0;
 }
+.file-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #333; }
+.file-name { flex: 1; }
+.file-size { flex: 1; color: #999; font-size: 12px; text-align: left; }
+.file-list-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.file-list-card >>> .el-card__body { padding: 6px 16px; }
 .page-header h2 { font-size: 16px; margin: 0; color: #333; }
 .page-desc { display: none; }
 .draft-steps { padding: 10px 20px; background: #fff; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }

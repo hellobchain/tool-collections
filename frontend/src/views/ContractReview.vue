@@ -27,13 +27,13 @@
         >
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">拖拽合同文件到此处，或<em>点击选择</em></div>
-          <div slot="tip" class="el-upload__tip">支持 .doc .docx .pdf 格式，单文件不超过20MB，单次最多1份</div>
+          <div slot="tip" class="el-upload__tip">支持 .doc .docx .pdf 格式，单文件不超过20MB</div>
         </el-upload>
       </el-card>
 
       <el-card v-if="uploadedFiles.length" class="file-list-card">
         <div class="file-list-header">
-          <span>已上传文件（{{ uploadedFiles.length }}份）</span>
+          <span>已上传文件</span>
         </div>
         <div v-for="file in uploadedFiles" :key="file.id" class="file-item">
           <div class="file-info">
