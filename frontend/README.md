@@ -1,4 +1,4 @@
-这是 **周报AI助手** 的前端项目，技术栈为 **Vue 2 + Element UI + Vue Router + Vuex + Axios**。
+这是 **百宝箱** 的前端项目，技术栈为 **Vue 2 + Element UI + Vue Router + Vuex + Axios**。
 
 ### 项目概要
 

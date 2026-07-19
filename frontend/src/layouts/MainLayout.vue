@@ -21,7 +21,7 @@
       >
         <el-menu-item index="/">
           <i class="el-icon-document-copy"></i>
-          <span slot="title">周报AI助手</span>
+          <span slot="title">周报助手</span>
         </el-menu-item>
         <el-menu-item index="/document-parse">
           <i class="el-icon-reading"></i>
@@ -48,7 +48,7 @@
           </template>
           <el-menu-item index="/contract-extract">
             <i class="el-icon-document-copy"></i>
-            <span slot="title">要素提取</span>
+            <span slot="title">上传提取</span>
           </el-menu-item>
           <el-menu-item index="/contract-extract-history">
             <i class="el-icon-folder-opened"></i>

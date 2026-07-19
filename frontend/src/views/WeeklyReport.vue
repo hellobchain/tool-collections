@@ -3,7 +3,7 @@
     <!-- 顶部导航 -->
     <div class="header">
       <div class="header-left">
-        <h1>📋 周报AI助手</h1>
+        <h1>📋 周报助手</h1>
         <el-date-picker
           v-model="selectedWeek"
           type="week"

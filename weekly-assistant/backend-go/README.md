@@ -17,7 +17,7 @@ go run cmd/main.go
 
 ## 项目概览：weekly-assistant 后端 (Go)
 
-这是一个**周报AI助手**的 Go 后端项目，基于 **Gin + GORM + PostgreSQL** 构建。
+这是一个**百宝箱**的 Go 后端项目，基于 **Gin + GORM + PostgreSQL** 构建。
 
 ### 目录结构
 

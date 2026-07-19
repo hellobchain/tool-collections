@@ -1,7 +1,7 @@
 <template>
   <div class="extract-history">
     <div class="page-header">
-      <h2>📂 我的要素提取</h2>
+      <h2>📂 我的提取</h2>
     </div>
 
     <el-card class="list-card">
