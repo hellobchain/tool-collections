@@ -14,6 +14,8 @@ class ErrorCode:
     UNAUTHORIZED = 2001
     RATE_LIMITED = 2002
     UNKNOWN_ERROR = 9999
+    NOT_FOUND = 404
+    INVALID_API_KEY = 2001
 
 
 T = TypeVar("T")

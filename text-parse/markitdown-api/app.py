@@ -62,6 +62,14 @@ async def general_exception_handler(request: Request, exc: Exception):
         content=fail(code=ErrorCode.UNKNOWN_ERROR, msg=str(exc)).model_dump()
     )
 
+# api 路由找不到错误拦截
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=200,
+        content=fail(code=ErrorCode.NOT_FOUND, msg="Endpoint not found").model_dump()
+    )
+
 
 # ---------- 鉴权 ----------
 api_key_header = APIKeyHeader(name=settings.API_KEY_HEADER, auto_error=True)
@@ -70,9 +78,9 @@ api_key_header = APIKeyHeader(name=settings.API_KEY_HEADER, auto_error=True)
 async def verify_api_key(api_key: str = Depends(api_key_header)):
     if api_key != settings.API_KEY:
         logger.warning(f"非法API Key尝试")
-        raise HTTPException(
-            status_code=2001,
-            detail="无效的API Key"
+        raise fail(
+            code=ErrorCode.INVALID_API_KEY,
+            msg="无效的API Key"
         )
     return api_key
 

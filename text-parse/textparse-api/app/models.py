@@ -13,6 +13,8 @@ class ErrorCode:
     NO_RESULT = 1005
     VALIDATION_ERROR = 1006
     UNKNOWN_ERROR = 9999
+    NOT_FOUND = 404
+    INVALID_API_KEY = 2001
 
 
 T = TypeVar("T")

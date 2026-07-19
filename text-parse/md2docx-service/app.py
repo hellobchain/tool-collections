@@ -76,6 +76,14 @@ async def general_exception_handler(request: Request, exc: Exception):
         content=fail(code=ErrorCode.UNKNOWN_ERROR, msg=str(exc)).model_dump()
     )
 
+# api 路由找不到错误拦截
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc):
+    return JSONResponse(
+        status_code=200,
+        content=fail(code=ErrorCode.NOT_FOUND, msg="Endpoint not found").model_dump()
+    )
+
 
 # ============ 同步转换端点 ============
 
@@ -244,7 +252,7 @@ async def health_check():
 
 
 @app.get("/")
-async def root():
+async def root(_=Depends(verify_api_key)):
     return ok(data={
         "service": "Markdown to Word Converter",
         "version": "2.0.0",

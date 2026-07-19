@@ -16,6 +16,7 @@ class ErrorCode:
     VALIDATION_ERROR = 1007
     UNAUTHORIZED = 2001
     UNKNOWN_ERROR = 9999
+    NOT_FOUND = 404
 
 
 T = TypeVar("T")
