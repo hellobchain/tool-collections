@@ -57,6 +57,26 @@ func (r *ContractReview) BeforeCreate(tx *gorm.DB) error {
 	return r.BaseModel.BeforeCreate(tx)
 }
 
+type ContractDraft struct {
+	BaseModel
+	UserID       uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	FileName     string         `gorm:"size:512" json:"file_name"`
+	FileID       string         `gorm:"size:128" json:"file_id"`
+	Requirements string         `gorm:"type:text" json:"requirements"`
+	Content      string         `gorm:"type:text" json:"content"`
+	ChangeLog    string         `gorm:"type:text" json:"change_log"`
+	Status       string         `gorm:"size:32;default:completed" json:"status"`
+	Progress     int            `gorm:"default:100" json:"progress"`
+	GeneratedAt  time.Time      `json:"generated_at"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (d *ContractDraft) BeforeCreate(tx *gorm.DB) error {
+	return d.BaseModel.BeforeCreate(tx)
+}
+
 type ContractReviewItem struct {
 	BaseModel
 	ReviewID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"review_id"`

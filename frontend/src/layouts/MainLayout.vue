@@ -40,6 +40,14 @@
             <i class="el-icon-time"></i>
             <span slot="title">我的审查</span>
           </el-menu-item>
+          <el-menu-item index="/contract-draft">
+            <i class="el-icon-edit-outline"></i>
+            <span slot="title">合同起草</span>
+          </el-menu-item>
+          <el-menu-item index="/contract-draft-history">
+            <i class="el-icon-folder-opened"></i>
+            <span slot="title">我的起草</span>
+          </el-menu-item>
         </el-submenu>
       </el-menu>
     </el-aside>

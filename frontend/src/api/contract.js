@@ -43,6 +43,34 @@ export function deleteHistory(reportId) {
   return api.delete(API_PREX+`/contract/v1/history/${reportId}`)
 }
 
+export function startDraftGen(params) {
+  return api.post(API_PREX+'/contract/v1/draft/generate', params, { timeout: 300000 })
+}
+
+export function getDraftProgress(taskId) {
+  return api.get(API_PREX+`/contract/v1/draft/${taskId}/progress`)
+}
+
+export function getDraftResult(taskId) {
+  return api.get(API_PREX+`/contract/v1/draft/${taskId}/result`)
+}
+
+export function downloadDraft(taskId) {
+  return api.get(API_PREX+`/contract/v1/draft/${taskId}/download`, { responseType: 'blob' })
+}
+
+export function getDraftHistory(params) {
+  return api.get(API_PREX+'/contract/v1/draft/history', { params })
+}
+
+export function getDraftDetail(draftId) {
+  return api.get(API_PREX+`/contract/v1/draft/history/${draftId}`)
+}
+
+export function deleteDraftHistory(draftId) {
+  return api.delete(API_PREX+`/contract/v1/draft/history/${draftId}`)
+}
+
 export function exportReport(reportId, format) {
   return api.get(API_PREX+`/contract/v1/report/${reportId}/export`, {
     params: { format },

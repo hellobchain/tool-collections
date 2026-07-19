@@ -35,6 +35,16 @@ const router = new Router({
           path: '/contract-history',
           name: 'ContractHistory',
           component: () => import('@/views/ContractHistory.vue')
+        },
+        {
+          path: '/contract-draft',
+          name: 'ContractDraft',
+          component: () => import('@/views/ContractDraft.vue')
+        },
+        {
+          path: '/contract-draft-history',
+          name: 'ContractDraftHistory',
+          component: () => import('@/views/ContractDraftHistory.vue')
         }
       ]
     }

@@ -109,6 +109,15 @@ func main() {
 		apiGroup.GET("/contract/v1/history", handlers.GetHistory)
 		apiGroup.DELETE("/contract/v1/history/:reportId", handlers.DeleteHistory)
 		apiGroup.GET("/contract/v1/report/:reportId/export", handlers.ExportReport)
+
+		// Contract Draft (static routes before :param routes)
+		apiGroup.GET("/contract/v1/draft/history", handlers.GetDraftHistory)
+		apiGroup.GET("/contract/v1/draft/history/:draftId", handlers.GetDraftDetail)
+		apiGroup.DELETE("/contract/v1/draft/history/:draftId", handlers.DeleteDraft)
+		apiGroup.POST("/contract/v1/draft/generate", handlers.StartDraftGenerate)
+		apiGroup.GET("/contract/v1/draft/:taskId/progress", handlers.GetDraftProgress)
+		apiGroup.GET("/contract/v1/draft/:taskId/result", handlers.GetDraftResult)
+		apiGroup.GET("/contract/v1/draft/:taskId/download", handlers.DownloadDraft)
 	}
 
 	// 启动周报自动生成定时任务

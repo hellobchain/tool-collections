@@ -8,6 +8,58 @@ const (
 	MAX_FILE_SIZE        = 20 * 1024 * 1024
 )
 
+// 合同审查状态
+const (
+	ContractReviewStatusPending   = "pending"   // 待审查
+	ContractReviewStatusRunning   = "running"   // 审查中
+	ContractReviewStatusCompleted = "completed" // 审查完成
+	ContractReviewStatusRejected  = "rejected"  // 审查被拒绝
+	ContractReviewStatusCanceled  = "canceled"  // 审查取消
+	ContractReviewStatusFailed    = "failed"    // 审查失败
+	ContractDraftStatusParsing    = "parsing"   // 文档解析中
+	ContractDraftStatusParsed     = "parsed"    // 文档解析完成
+)
+
+// 合同审查项状态
+const (
+	ContractReviewItemStatusOpen   = "open"   // 待处理
+	ContractReviewItemStatusIgnore = "ignore" // 已忽略
+	ContractReviewItemStatusFixed  = "fixed"  // 已修复
+	ContractReviewItemStatusDone   = "done"   // 已处理
+)
+
+// 合同审查项状态描述
+const (
+	ContractReviewItemStatusOpenDesc   = "公开"
+	ContractReviewItemStatusIgnoreDesc = "已忽略"
+	ContractReviewItemStatusFixedDesc  = "已修复"
+	ContractReviewItemStatusDoneDesc   = "已处理"
+)
+
+// 风险级别
+const (
+	RiskLevelHigh   = "high"   // 高风险
+	RiskLevelMedium = "medium" // 中风险
+	RiskLevelLow    = "low"    // 低风险
+)
+
+// 风险级别描述
+const (
+	RiskLevelHighDesc   = "高风险"
+	RiskLevelMediumDesc = "中风险"
+	RiskLevelLowDesc    = "低风险"
+)
+
+// 合同起草状态
+const (
+	ContractDraftStatusPending    = "pending"    // 待生成
+	ContractDraftStatusGenerating = "generating" // 生成中
+	ContractDraftStatusCompleted  = "completed"  // 生成完成
+	ContractDraftStatusRejected   = "rejected"   // 生成被拒绝
+	ContractDraftStatusCanceled   = "canceled"   // 生成取消
+	ContractDraftStatusFailed     = "failed"     // 生成失败
+)
+
 // ============ 分页 ============
 const (
 	DefaultPage      = 1

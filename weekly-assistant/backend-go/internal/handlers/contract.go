@@ -80,7 +80,7 @@ func UploadContract(c *gin.Context) {
 		FileSavePath: fileSavePath,
 		Bucket:       services.GetOssBucket(),
 		FileType:     ext,
-		Status:       "parsed",
+		Status:       constants.ContractDraftStatusParsed,
 	}
 	if err := database.DB.Create(&cf).Error; err != nil {
 		slog.Errorf("Failed to save contract file record: %v", err)
@@ -219,7 +219,7 @@ func StartReview(c *gin.Context) {
 		PositionLabel:     positionLabel,
 		Standards:         string(standardsJSON),
 		StandardsLabel:    standardsLabel,
-		Status:            "running",
+		Status:            constants.ContractReviewStatusRunning,
 		Progress:          0,
 		HighRisk:          0,
 		MediumRisk:        0,
@@ -621,13 +621,6 @@ func (r *oleReader) findDirectoryByContent(sat []int) []byte {
 		}
 	}
 	return nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 func (r *oleReader) sector(secID int) []byte {
@@ -1072,7 +1065,7 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 
 	if allText == "" {
 		database.DB.Model(review).Updates(map[string]interface{}{
-			"status":   "failed",
+			"status":   constants.ContractReviewStatusFailed,
 			"progress": 0,
 		})
 		return
@@ -1189,7 +1182,7 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 	reviewEndTime := time.Now().Format("2006-01-02 15:04:05")
 
 	database.DB.Model(review).Updates(map[string]interface{}{
-		"status":          "completed",
+		"status":          constants.ContractReviewStatusCompleted,
 		"progress":        100,
 		"high_risk":       review.HighRisk,
 		"medium_risk":     review.MediumRisk,
@@ -1416,12 +1409,12 @@ func writeExcelReport(w io.Writer, review *models.ContractReview, items []models
 func toLevelLabel(level string) string {
 	levelLabel := strings.ToLower(level)
 	switch levelLabel {
-	case "high":
-		levelLabel = "高风险"
-	case "medium":
-		levelLabel = "中风险"
-	default:
-		levelLabel = "低风险"
+	case constants.RiskLevelHigh:
+		levelLabel = constants.RiskLevelHighDesc
+	case constants.RiskLevelMedium:
+		levelLabel = constants.RiskLevelMediumDesc
+	case constants.RiskLevelLow:
+		levelLabel = constants.RiskLevelLowDesc
 	}
 	return levelLabel
 }
@@ -1429,12 +1422,14 @@ func toLevelLabel(level string) string {
 func toStatusLabel(status string) string {
 	statusLabel := strings.ToLower(status)
 	switch statusLabel {
-	case "open":
-		statusLabel = "公开"
-	case "ignored":
-		statusLabel = "已忽略"
-	default:
-		statusLabel = "已处理"
+	case constants.ContractReviewItemStatusOpen:
+		statusLabel = constants.ContractReviewItemStatusOpenDesc
+	case constants.ContractReviewItemStatusIgnore:
+		statusLabel = constants.ContractReviewItemStatusIgnoreDesc
+	case constants.ContractReviewItemStatusFixed:
+		statusLabel = constants.ContractReviewItemStatusFixedDesc
+	case constants.ContractReviewItemStatusDone:
+		statusLabel = constants.ContractReviewItemStatusDoneDesc
 	}
 	return "-"
 }
