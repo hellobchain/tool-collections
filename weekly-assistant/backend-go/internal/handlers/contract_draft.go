@@ -127,7 +127,7 @@ func GetDraftProgress(c *gin.Context) {
 
 	utils.Success(c, gin.H{
 		"percent":      d.Progress,
-		"current_step": constants.ContractDraftStatusPending,
+		"current_step": constants.ContractDraftStatusPendingDesc,
 		"status":       d.Status,
 	})
 }
@@ -289,7 +289,7 @@ func runDraftAgent(task *draftTask) {
 
 	// Step 1: Load template text
 	setStep := updateDB
-	setStep(5, constants.ContractDraftStatusGenerating, "正在读取模板文件...")
+	setStep(5, constants.ContractDraftStatusGeneratingDesc, "正在读取模板文件...")
 	var cf models.ContractFile
 	if err := database.DB.Where("id = ?", task.FileID).First(&cf).Error; err != nil {
 		failTask(task, "模板文件读取失败")
@@ -310,7 +310,7 @@ func runDraftAgent(task *draftTask) {
 	task.TemplateText = templateText
 
 	// Step 2: Analyze template structure
-	setStep(15, constants.ContractDraftStatusGenerating, "正在分析模板结构...")
+	setStep(15, constants.ContractDraftStatusGeneratingDesc, "正在分析模板结构...")
 	analysisPrompt := fmt.Sprintf(`你是一个合同模板分析专家。请分析以下合同模板，提取其结构信息。
 
 合同模板内容：
@@ -332,7 +332,7 @@ func runDraftAgent(task *draftTask) {
 	analysisResult = cleanJSON(analysisResult)
 
 	// Step 3: Understand requirements
-	setStep(35, constants.ContractDraftStatusGenerating, "正在理解用户需求...")
+	setStep(35, constants.ContractDraftStatusGeneratingDesc, "正在理解用户需求...")
 	reqPrompt := fmt.Sprintf(`你是一个合同需求分析专家。请将用户的自然语言需求转化为结构化参数，用于填充合同模板。
 
 用户需求：
@@ -352,7 +352,7 @@ func runDraftAgent(task *draftTask) {
 	paramsResult = cleanJSON(paramsResult)
 
 	// Step 4: Generate draft
-	setStep(55, constants.ContractDraftStatusGenerating, "正在生成合同草案...")
+	setStep(55, constants.ContractDraftStatusGeneratingDesc, "正在生成合同草案...")
 	genPrompt := fmt.Sprintf(`你是一个合同起草专家。请根据以下信息生成一份完整的合同草案。
 
 模板原文：
@@ -380,7 +380,7 @@ func runDraftAgent(task *draftTask) {
 	}
 
 	// Step 5: Generate change log
-	setStep(80, constants.ContractDraftStatusGenerating, "正在生成条款变更说明...")
+	setStep(80, constants.ContractDraftStatusGeneratingDesc, "正在生成条款变更说明...")
 	clPrompt := fmt.Sprintf(`你是一个合同变更分析专家。请对比原始模板和生成的草案，生成一份条款变更说明。
 
 模板原文：
@@ -416,7 +416,7 @@ func runDraftAgent(task *draftTask) {
 	draftTasksMu.Lock()
 	task.Status = constants.ContractDraftStatusCompleted
 	task.Progress = 100
-	task.CurrentStep = constants.ContractDraftStatusCompleted
+	task.CurrentStep = constants.ContractDraftStatusCompletedDesc
 	task.Content = draftContent
 	task.ChangeLog = changeLog
 	task.GeneratedAt = generatedAt.Format("2006-01-02 15:04")

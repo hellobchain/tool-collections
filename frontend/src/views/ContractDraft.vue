@@ -75,19 +75,20 @@
           <span>生成时间：{{ generateTime }}</span>
         </div>
         <div class="result-preview">
-          <pre class="preview-content">{{ draftContent }}</pre>
+          <pre class="preview-content">{{ renderMd(draftContent) }}</pre>
         </div>
       </el-card>
 
       <el-card class="changelog-card" v-if="changeLog">
         <div slot="header">📝 条款变更说明</div>
-        <pre class="changelog-content">{{ changeLog }}</pre>
+        <pre class="changelog-content">{{ renderMd(changeLog) }}</pre>
       </el-card>
     </div>
   </div>
 </template>
 
 <script>
+import { marked } from 'marked'
 import { uploadContract, startDraftGen, getDraftProgress, getDraftResult, downloadDraft } from '@/api/contract'
 
 export default {
@@ -118,6 +119,10 @@ export default {
     this.stopPolling()
   },
   methods: {
+    renderMd(text) {
+      if (!text) return ''
+      return marked.parse(text, { breaks: true })
+    },
     handleFileRemove() {
       this.selectedFile = null
       this.fileList = []
@@ -163,7 +168,6 @@ export default {
         this.taskId = task_id
         this.startPolling()
       } catch (e) {
-        this.$message.error('启动起草失败')
         this.activeStep = 0
       }
     },
@@ -179,6 +183,11 @@ export default {
           if (data.percent >= 100 || data.status === 'completed') {
             this.stopPolling()
             this.fetchResult()
+          } else if (data.status === 'failed') {
+            this.stopPolling()
+            this.$message.error('生成失败')
+            this.activeStep = 0
+            return
           }
         } catch {
           this.stopPolling()
@@ -197,7 +206,6 @@ export default {
         this.generateTime = data.generated_at || new Date().toLocaleString()
         this.activeStep = 2
       } catch {
-        this.$message.error('获取生成结果失败')
       }
     },
     async handleDownload() {
@@ -213,7 +221,6 @@ export default {
         document.body.removeChild(a)
         URL.revokeObjectURL(url)
       } catch {
-        this.$message.error('下载失败')
       }
     },
     handleBack() {

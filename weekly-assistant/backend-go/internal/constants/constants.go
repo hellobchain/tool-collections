@@ -60,6 +60,16 @@ const (
 	ContractDraftStatusFailed     = "failed"     // 生成失败
 )
 
+// 合同起草状态描述
+const (
+	ContractDraftStatusPendingDesc    = "待生成"
+	ContractDraftStatusGeneratingDesc = "生成中"
+	ContractDraftStatusCompletedDesc  = "生成完成"
+	ContractDraftStatusRejectedDesc   = "生成被拒绝"
+	ContractDraftStatusCanceledDesc   = "生成取消"
+	ContractDraftStatusFailedDesc     = "生成失败"
+)
+
 // ============ 分页 ============
 const (
 	DefaultPage      = 1

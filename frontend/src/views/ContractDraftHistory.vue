@@ -130,7 +130,6 @@ export default {
         this.detail = res.data.data || res.data
         this.detailVisible = true
       } catch {
-        this.$message.error('获取详情失败')
       }
     },
     handleDelete(row) {
@@ -140,7 +139,6 @@ export default {
           this.$message.success('删除成功')
           this.fetchList()
         } catch {
-          this.$message.error('删除失败')
         }
       }).catch(() => {})
     }
