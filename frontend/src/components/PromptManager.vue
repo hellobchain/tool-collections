@@ -100,10 +100,9 @@
           </el-form-item>
           <el-form-item label="系统提示词" required>
             <el-input 
-              v-model="viewData.system_prompt" 
+              v-model="createData.system_prompt" 
               type="textarea" 
               :rows="3" 
-              :disabled="viewData.is_system"
             />
           </el-form-item>
           <el-form-item label="用户提示词" required>
@@ -212,7 +211,7 @@ export default {
       this.showView = true
     },
     async saveTemplate() {
-      if (!this.viewData.name || !this.viewData.system_prompt || !this.viewData.user_prompt_template) {
+      if (!this.viewData.name || !this.viewData.system_prompt || !this.viewData.user_prompt_template || !this.viewData.prompt_type) {
         this.$message.warning('请填写完整信息')
         return
       }
@@ -232,7 +231,7 @@ export default {
       }
     },
     async createTemplate() {
-      if (!this.createData.name || !this.createData.system_prompt || !this.createData.user_prompt_template) {
+      if (!this.createData.name || !this.createData.system_prompt || !this.createData.user_prompt_template || !this.createData.prompt_type) {
         this.$message.warning('请填写完整信息')
         return
       }

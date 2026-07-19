@@ -1,8 +1,33 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Any, Generic, TypeVar
 from datetime import datetime
 from enum import Enum
 
+
+# ---------- 业务错误码 ----------
+class ErrorCode:
+    SUCCESS = 0
+    FILE_TYPE_NOT_ACCEPTED = 1001
+    FILE_TOO_LARGE = 1002
+    TASK_NOT_FOUND = 1003
+    TASK_CANNOT_CANCEL = 1004
+    CONVERSION_FAILED = 1005
+    PANDOC_NOT_FOUND = 1006
+    VALIDATION_ERROR = 1007
+    UNAUTHORIZED = 2001
+    UNKNOWN_ERROR = 9999
+
+
+T = TypeVar("T")
+
+
+class ApiResponse(BaseModel, Generic[T]):
+    code: int = Field(ErrorCode.SUCCESS, description="业务状态码，0 表示成功")
+    msg: str = Field("success", description="结果描述信息")
+    data: Optional[T] = None
+
+
+# ---------- 业务模型 ----------
 
 class TaskStatus(str, Enum):
     PENDING = "pending"
@@ -38,15 +63,14 @@ class TaskInfo(BaseModel):
 
 
 class TaskResponse(BaseModel):
-    success: bool
     task_id: str
     message: str
     status_url: str
 
 
-class HealthResponse(BaseModel):
+class HealthData(BaseModel):
     status: Literal["ok", "error"]
     pandoc_available: bool
     queue_size: int
     active_tasks: int
-    version: str = "1.0.0"
+    version: str = "2.0.0"

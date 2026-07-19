@@ -2,18 +2,21 @@ import io
 import uuid
 import zipfile
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import ValidationError
 
 from app.converter import DoclingConverter
 from app.utils import disposition_filename
+from app.models import ApiResponse, ErrorCode
 
 # 初始化应用
 app = FastAPI(
     title="Docling HTTP Service",
     description="文档转换服务 - 支持PDF、Word、图片等多种格式",
-    version="1.0.0"
+    version="1.0.0",
+    default_response_class=JSONResponse,
 )
 
 # CORS配置
@@ -31,30 +34,62 @@ converter = DoclingConverter()
 # 简单的任务存储（生产环境建议使用Redis）
 task_store = {}
 
+
+def ok(data=None, msg="success"):
+    return ApiResponse(code=ErrorCode.SUCCESS, msg=msg, data=data)
+
+
+def fail(code: int, msg: str, data=None):
+    return ApiResponse(code=code, msg=msg, data=data)
+
+
+# ---------- 统一异常处理器 ----------
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=200,
+        content=fail(code=exc.status_code, msg=exc.detail).model_dump()
+    )
+
+
+@app.exception_handler(ValidationError)
+async def validation_exception_handler(request: Request, exc: ValidationError):
+    return JSONResponse(
+        status_code=200,
+        content=fail(code=ErrorCode.VALIDATION_ERROR, msg=str(exc)).model_dump()
+    )
+
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=200,
+        content=fail(code=ErrorCode.UNKNOWN_ERROR, msg=str(exc)).model_dump()
+    )
+
+
+# ---------- 端点 ----------
+
 @app.get("/health")
 async def health_check():
-    """健康检查端点"""
-    return {"status": "healthy", "service": "docling"}
+    return ok(data={"status": "healthy", "service": "docling"})
+
 
 @app.post("/v1/convert/file")
 async def convert_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    to_formats: str = Form("md"),  # 逗号分隔的格式列表
+    to_formats: str = Form("md"),
     do_ocr: bool = Form(True),
     table_mode: str = Form("fast"),
     pdf_backend: str = Form("dlparse_v2")
 ):
-    """
-    同步转换文档
-    """
-    # 限制文件大小（100MB）
     MAX_FILE_SIZE = 100 * 1024 * 1024
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="File too large. Max size: 100MB")
-    
-    # 解析参数
+        return fail(ErrorCode.FILE_TOO_LARGE, "File too large. Max size: 100MB")
+
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
@@ -62,40 +97,32 @@ async def convert_file(
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
-    
+
     try:
-        # 执行转换
         result = converter.convert(content, file.filename, params)
-        
-        return JSONResponse(content={
-            "status": "success",
+        return ok(data={
             "filename": file.filename,
             "formats": formats,
             "document": result
         })
-        
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+        return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
+
 
 @app.post("/v1/convert/fileStream")
 async def convert_file_stream(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    to_formats: str = Form("md"),  # 逗号分隔的格式列表
+    to_formats: str = Form("md"),
     do_ocr: bool = Form(True),
     table_mode: str = Form("fast"),
     pdf_backend: str = Form("dlparse_v2")
 ):
-    """
-    同步转换文档
-    """
-    # 限制文件大小（100MB）
     MAX_FILE_SIZE = 100 * 1024 * 1024
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=413, detail="File too large. Max size: 100MB")
-    
-    # 解析参数
+        return fail(ErrorCode.FILE_TOO_LARGE, "File too large. Max size: 100MB")
+
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
@@ -103,12 +130,11 @@ async def convert_file_stream(
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
-    
+
     try:
         result = converter.convert(content, file.filename, params)
 
         if len(formats) == 1:
-            # Single format → return directly as file
             fmt = formats[0]
             body = result[fmt]
             ext = fmt if fmt != 'text' else 'txt'
@@ -125,7 +151,6 @@ async def convert_file_stream(
                 headers={"Content-Disposition": disposition_filename(f"{stem}.{ext}")}
             )
 
-        # Multiple formats → zip
         stem = Path(file.filename).stem
         buf = io.BytesIO()
         with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
@@ -143,7 +168,8 @@ async def convert_file_stream(
         )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Conversion failed: {str(e)}")
+        return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
+
 
 @app.post("/v1/convert/file/async")
 async def convert_file_async(
@@ -154,23 +180,16 @@ async def convert_file_async(
     table_mode: str = Form("fast"),
     pdf_backend: str = Form("dlparse_v2")
 ):
-    """
-    异步转换文档（支持大文件）
-    """
-    # 读取文件
     content = await file.read()
-    
-    # 生成任务ID
+
     task_id = str(uuid.uuid4())
-    
-    # 保存文件到临时目录
+
     suffix = Path(file.filename).suffix
     temp_dir = Path("/tmp/docling")
     temp_dir.mkdir(exist_ok=True)
     temp_path = temp_dir / f"{task_id}{suffix}"
     temp_path.write_bytes(content)
-    
-    # 解析参数
+
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
@@ -178,57 +197,50 @@ async def convert_file_async(
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
-    
-    # 存储任务信息
+
     task_store[task_id] = {
         "status": "pending",
         "filename": file.filename,
         "params": params,
         "temp_path": str(temp_path)
     }
-    
-    # 后台执行转换
+
     background_tasks.add_task(process_conversion, task_id, temp_path, params)
-    
-    return JSONResponse(content={
+
+    return ok(data={
         "task_id": task_id,
         "status": "pending",
         "message": "Task submitted successfully"
     })
 
+
 async def process_conversion(task_id: str, temp_path: Path, params: dict):
-    """后台处理转换任务"""
     try:
-        # 更新状态
         task_store[task_id]["status"] = "processing"
-        
-        # 读取文件内容
+
         content = temp_path.read_bytes()
         filename = task_store[task_id]["filename"]
-        
-        # 执行转换
+
         result = converter.convert(content, filename, params)
-        
-        # 更新结果
+
         task_store[task_id]["status"] = "completed"
         task_store[task_id]["result"] = result
-        
+
     except Exception as e:
         task_store[task_id]["status"] = "failed"
         task_store[task_id]["error"] = str(e)
     finally:
-        # 清理临时文件
         if temp_path.exists():
             temp_path.unlink()
 
+
 @app.get("/v1/status/{task_id}")
 async def get_task_status(task_id: str):
-    """查询任务状态"""
     if task_id not in task_store:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
+        return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
+
     task = task_store[task_id]
-    return JSONResponse(content={
+    return ok(data={
         "task_id": task_id,
         "status": task["status"],
         "filename": task.get("filename"),
@@ -236,15 +248,15 @@ async def get_task_status(task_id: str):
         "error": task.get("error")
     })
 
+
 @app.get("/v1/download/{task_id}")
 async def download_task(task_id: str):
-    """下载转换结果"""
     if task_id not in task_store:
-        raise HTTPException(status_code=404, detail="Task not found")
+        return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
 
     task = task_store[task_id]
     if task["status"] != "completed":
-        raise HTTPException(status_code=400, detail="Task not yet completed")
+        return fail(ErrorCode.TASK_NOT_COMPLETED, "Task not yet completed")
 
     result = task["result"]
     formats = task["params"]["to_formats"]
@@ -255,7 +267,7 @@ async def download_task(task_id: str):
         fmt = formats[0]
         body = result.get(fmt)
         if body is None:
-            raise HTTPException(status_code=500, detail="No result found")
+            return fail(ErrorCode.NO_RESULT, "No result found")
         ext = fmt if fmt != 'text' else 'txt'
         media_types = {
             'md': 'text/markdown',
@@ -269,7 +281,6 @@ async def download_task(task_id: str):
             headers={"Content-Disposition": disposition_filename(f"{stem}.{ext}")}
         )
 
-    # Multiple formats → zip
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
         for fmt in formats:
@@ -285,13 +296,14 @@ async def download_task(task_id: str):
         headers={"Content-Disposition": disposition_filename(f"{stem}.zip")}
     )
 
+
 @app.delete("/v1/task/{task_id}")
 async def delete_task(task_id: str):
-    """删除任务"""
     if task_id in task_store:
         del task_store[task_id]
-        return {"status": "deleted", "task_id": task_id}
-    raise HTTPException(status_code=404, detail="Task not found")
+        return ok(data={"task_id": task_id})
+    return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
+
 
 if __name__ == "__main__":
     import uvicorn
