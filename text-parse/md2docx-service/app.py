@@ -6,14 +6,14 @@ from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
 from config import UPLOAD_DIR, RESULTS_DIR, HOST, PORT, MAX_FILE_SIZE
 from models import (
     ConvertRequest, BatchConvertRequest, TaskResponse,
-    TaskInfo, HealthData, TaskStatus, ApiResponse, ErrorCode
+    HealthData, TaskStatus, ApiResponse, ErrorCode
 )
 from auth import verify_api_key
 from tasks import task_manager
@@ -106,7 +106,11 @@ async def convert_file(
             "sync", md_text, str(ref_path) if ref_path else None, None,
             output_path=final_path
         )
-        return ok(data={"filename": f"{file.filename.rsplit('.', 1)[0]}.docx"})
+        return FileResponse(
+            final_path,
+            filename=f"{file.filename.rsplit('.', 1)[0]}.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
     except Exception as e:
         return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
 
@@ -124,7 +128,11 @@ async def convert_text(
     try:
         final_path = str(RESULTS_DIR / f"sync_{filename}")
         await task_manager._convert("sync", markdown, reference_doc, None, output_path=final_path)
-        return ok(data={"filename": filename})
+        return FileResponse(
+            final_path,
+            filename=filename,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
     except Exception as e:
         return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
 
