@@ -28,8 +28,17 @@
         >
           <i class="el-icon-upload"></i>
           <div class="el-upload__text">拖拽合同文件到此处，或<em>点击选择</em></div>
-          <div slot="tip" class="el-upload__tip">支持 .doc .docx 格式，单文件不超过50MB，单次最多10份</div>
+          <div slot="tip" class="el-upload__tip">支持 .doc .docx 格式，单文件不超过50MB，单次最多1份</div>
         </el-upload>
+      </el-card>
+      <el-card v-if="uploadedFiles.length" class="file-list-card">
+        <div v-for="f in uploadedFiles" :key="f.id" class="file-item">
+          <span class="file-name">{{ f.name }}</span>
+          <span class="file-size">{{ f.size }}</span>
+          <el-tag v-if="f.status==='parsed'" type="success" size="mini">就绪</el-tag>
+          <el-tag v-else-if="f.status==='uploading'" type="warning" size="mini">上传中</el-tag>
+          <el-tag v-else-if="f.status==='failed'" type="danger" size="mini">失败</el-tag>
+        </div>
       </el-card>
       <div class="step-actions">
         <el-button :disabled="!uploadedFiles.length" type="primary" @click="activeStep=1">下一步</el-button>
@@ -153,7 +162,7 @@ export default {
     async handleFileChange(file) {
       if (!/\.docx?$/i.test(file.name)) { this.$message.error('仅支持 .doc .docx'); this.$refs.upload.clearFiles(); return }
       if (file.size > 50*1024*1024) { this.$message.error('文件不超过50MB'); this.$refs.upload.clearFiles(); return }
-      if (this.uploadedFiles.length >= 10) { this.$message.error('最多10份'); return }
+      if (this.uploadedFiles.length >= 1) { this.$message.error('最多1份'); this.$refs.upload.clearFiles(); return }
       const raw = file.raw
       const tempId = '_tmp_' + Date.now()
       this.uploadedFiles.push({ id: tempId, name: raw.name, size: this.formatSize(raw.size), status: 'uploading', raw })
@@ -162,11 +171,11 @@ export default {
         const server = res.data.data || res.data
         const idx = this.uploadedFiles.findIndex(f => f.id === tempId)
         if (idx >= 0) this.$set(this.uploadedFiles, idx, { id: server.id, name: server.name, size: server.size, status: 'parsed' })
+        this.fileList = this.uploadedFiles.filter(f => f.status === 'parsed' || f.status === 'failed').map(f => ({ name: f.name, size: f.size }))
       } catch {
         const idx = this.uploadedFiles.findIndex(f => f.id === tempId)
         if (idx >= 0) this.$set(this.uploadedFiles, idx, { ...this.uploadedFiles[idx], status: 'failed' })
       }
-      this.$refs.upload.clearFiles()
     },
     addField() {
       this.fields.push({ name: '', description: '', data_type: 'text', required: false, multi: false })
@@ -249,6 +258,11 @@ export default {
 .upload-card >>> .el-upload { width: 100%; }
 .upload-card >>> .el-upload-dragger { width: 100%; padding: 16px; }
 .step-actions { display: flex; gap: 8px; justify-content: center; padding: 8px 0; }
+.file-list-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.file-list-card >>> .el-card__body { padding: 6px 16px; }
+.file-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 13px; color: #333; }
+.file-name { flex: 1; }
+.file-size { color: #999; font-size: 12px; }
 .field-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .field-empty { text-align: center; color: #999; padding: 20px; }
