@@ -79,7 +79,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # ============ 同步转换端点 ============
 
-@app.post("/convert/file")
+@app.post("/md2docx/v1/convert/file")
 async def convert_file(
     file: UploadFile = File(...),
     reference_doc: Optional[UploadFile] = File(None),
@@ -111,7 +111,7 @@ async def convert_file(
         return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
 
 
-@app.post("/convert/text")
+@app.post("/md2docx/v1/convert/text")
 async def convert_text(
     markdown: str = Form(...),
     filename: str = Form("document.docx"),
@@ -131,7 +131,7 @@ async def convert_text(
 
 # ============ 异步任务端点 ============
 
-@app.post("/convert/async")
+@app.post("/md2docx/v1/convert/async")
 async def convert_async(request: ConvertRequest, _=Depends(verify_api_key)):
     task_id = await task_manager.create_task(
         markdown=request.markdown,
@@ -146,7 +146,7 @@ async def convert_async(request: ConvertRequest, _=Depends(verify_api_key)):
     ))
 
 
-@app.post("/convert/batch")
+@app.post("/md2docx/v1/convert/batch")
 async def convert_batch(request: BatchConvertRequest, _=Depends(verify_api_key)):
     combined_md = "\n\n---\n\n".join([item.markdown for item in request.items])
 
@@ -165,7 +165,7 @@ async def convert_batch(request: BatchConvertRequest, _=Depends(verify_api_key))
 
 # ============ 任务状态查询 ============
 
-@app.get("/tasks/{task_id}")
+@app.get("/md2docx/v1/tasks/{task_id}")
 async def get_task_status(task_id: str, _=Depends(verify_api_key)):
     task = await task_manager.get_task(task_id)
     if not task:
@@ -173,7 +173,7 @@ async def get_task_status(task_id: str, _=Depends(verify_api_key)):
     return ok(data=task)
 
 
-@app.get("/tasks/{task_id}/progress")
+@app.get("/md2docx/v1/tasks/{task_id}/progress")
 async def get_task_progress(task_id: str, _=Depends(verify_api_key)):
     async def event_generator():
         while True:
@@ -193,7 +193,7 @@ async def get_task_progress(task_id: str, _=Depends(verify_api_key)):
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/md2docx/v1/tasks/{task_id}")
 async def cancel_task(task_id: str, _=Depends(verify_api_key)):
     success = await task_manager.cancel_task(task_id)
     if not success:
@@ -203,7 +203,7 @@ async def cancel_task(task_id: str, _=Depends(verify_api_key)):
 
 # ============ 文件下载 ============
 
-@app.get("/download/{task_id}/{filename}")
+@app.get("/md2docx/v1/download/{task_id}/{filename}")
 async def download_result(task_id: str, filename: str, _=Depends(verify_api_key)):
     file_path = RESULTS_DIR / f"{task_id}_{filename}"
     if not file_path.exists():
@@ -219,7 +219,7 @@ async def download_result(task_id: str, filename: str, _=Depends(verify_api_key)
 
 # ============ 健康检查 ============
 
-@app.get("/health")
+@app.get("/md2docx/v1/health")
 async def health_check():
     pandoc_ok = shutil.which("pandoc") is not None
 
@@ -241,14 +241,14 @@ async def root():
         "service": "Markdown to Word Converter",
         "version": "2.0.0",
         "endpoints": {
-            "sync_file": "POST /convert/file",
-            "sync_text": "POST /convert/text",
-            "async": "POST /convert/async",
-            "batch": "POST /convert/batch",
-            "status": "GET /tasks/{task_id}",
-            "progress": "GET /tasks/{task_id}/progress",
-            "download": "GET /download/{task_id}/{filename}",
-            "health": "GET /health"
+            "sync_file": "POST /md2docx/v1/convert/file",
+            "sync_text": "POST /md2docx/v1/convert/text",
+            "async": "POST /md2docx/v1/convert/async",
+            "batch": "POST /md2docx/v1/convert/batch",
+            "status": "GET /md2docx/v1/tasks/{task_id}",
+            "progress": "GET /md2docx/v1/tasks/{task_id}/progress",
+            "download": "GET /md2docx/v1/download/{task_id}/{filename}",
+            "health": "GET /md2docx/v1/health"
         }
     })
 

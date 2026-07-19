@@ -94,14 +94,14 @@ semaphore = asyncio.Semaphore(5)
 # ---------- 健康检查 ----------
 
 
-@app.get("/health")
+@app.get("/markitdown/v1/health")
 async def health():
     return ok(data={"status": "ok", "timestamp": datetime.now().isoformat()})
 
 
 # ---------- 核心转换接口 ----------
 
-@app.post("/convert")
+@app.post("/markitdown/v1/convert")
 @limiter.limit(settings.RATE_LIMIT)
 async def convert_file(
     request: Request,
@@ -157,7 +157,7 @@ async def convert_file(
 
 # ---------- 纯文本返回 ----------
 
-@app.post("/convert-raw")
+@app.post("/markitdown/v1/convert-raw")
 @limiter.limit(settings.RATE_LIMIT)
 async def convert_raw(
     request: Request,
@@ -172,7 +172,7 @@ async def convert_raw(
 
 # ---------- 转换并返回 Markdown 文件流 ----------
 
-@app.post("/convertToMdFile")
+@app.post("/markitdown/v1/convertToMdFile")
 async def convert_to_md_file(
     request: Request,
     file: UploadFile = File(...),
@@ -243,7 +243,7 @@ async def convert_to_md_file(
 
 # ---------- 异步单文件任务 ----------
 
-@app.post("/async/convert")
+@app.post("/markitdown/v1/async/convert")
 async def async_convert(
     request: Request,
     file: UploadFile = File(...),
@@ -273,7 +273,7 @@ async def async_convert(
 
 # ---------- 批量异步任务 ----------
 
-@app.post("/async/batch")
+@app.post("/markitdown/v1/async/batch")
 async def async_batch_convert(
     request: Request,
     files: List[UploadFile] = File(...),
@@ -320,7 +320,7 @@ async def async_batch_convert(
 
 # ---------- 查询任务状态 ----------
 
-@app.get("/async/status/{task_id}")
+@app.get("/markitdown/v1/async/status/{task_id}")
 async def get_task_status(
     task_id: str,
     api_key: str = Depends(verify_api_key)
@@ -377,7 +377,7 @@ async def get_task_status(
 
 # ---------- 取消任务 ----------
 
-@app.delete("/async/cancel/{task_id}")
+@app.delete("/markitdown/v1/async/cancel/{task_id}")
 async def cancel_task(
     task_id: str,
     api_key: str = Depends(verify_api_key)
@@ -407,7 +407,7 @@ async def cancel_task(
 
 # ---------- 批量任务列表 ----------
 
-@app.get("/async/tasks")
+@app.get("/markitdown/v1/async/tasks")
 async def list_recent_tasks(
     limit: int = 20,
     api_key: str = Depends(verify_api_key)
@@ -427,7 +427,7 @@ async def list_recent_tasks(
         })
 
 
-logger.info("异步接口已启用: /async/convert, /async/batch, /async/status/{task_id}")
+logger.info("异步接口已启用: /markitdown/v1/async/convert, /markitdown/v1/async/batch, /markitdown/v1/async/status/{task_id}")
 
 if __name__ == "__main__":
     import uvicorn

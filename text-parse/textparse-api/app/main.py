@@ -71,12 +71,12 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # ---------- 端点 ----------
 
-@app.get("/health")
+@app.get("/text-parse/v1/health")
 async def health_check():
     return ok(data={"status": "healthy", "service": "docling"})
 
 
-@app.post("/v1/convert/file")
+@app.post("/text-parse/v1/convert/file")
 async def convert_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -109,7 +109,7 @@ async def convert_file(
         return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
 
 
-@app.post("/v1/convert/fileStream")
+@app.post("/text-parse/v1/convert/fileStream")
 async def convert_file_stream(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -171,7 +171,7 @@ async def convert_file_stream(
         return fail(ErrorCode.CONVERSION_FAILED, f"Conversion failed: {str(e)}")
 
 
-@app.post("/v1/convert/file/async")
+@app.post("/text-parse/v1/convert/file/async")
 async def convert_file_async(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
@@ -234,7 +234,7 @@ async def process_conversion(task_id: str, temp_path: Path, params: dict):
             temp_path.unlink()
 
 
-@app.get("/v1/status/{task_id}")
+@app.get("/text-parse/v1/status/{task_id}")
 async def get_task_status(task_id: str):
     if task_id not in task_store:
         return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
@@ -249,7 +249,7 @@ async def get_task_status(task_id: str):
     })
 
 
-@app.get("/v1/download/{task_id}")
+@app.get("/text-parse/v1/download/{task_id}")
 async def download_task(task_id: str):
     if task_id not in task_store:
         return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
@@ -297,7 +297,7 @@ async def download_task(task_id: str):
     )
 
 
-@app.delete("/v1/task/{task_id}")
+@app.delete("/text-parse/v1/task/{task_id}")
 async def delete_task(task_id: str):
     if task_id in task_store:
         del task_store[task_id]
