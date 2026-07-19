@@ -140,6 +140,12 @@ export default {
         this.$refs.upload.clearFiles()
         return
       }
+      if (this.fileList.length > 0) {
+        this.$message.error('仅支持单个文件')
+        this.fileList = []
+        this.$refs.upload.clearFiles()
+        return;
+      }
       this.fileList = [file]
       this.selectedFile = file.raw
       this.fileName = file.name

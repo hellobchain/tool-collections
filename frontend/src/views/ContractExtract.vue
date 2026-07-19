@@ -160,9 +160,27 @@ export default {
   methods: {
     handleFileRemove() { this.uploadedFiles = []; this.fileList = [] },
     async handleFileChange(file) {
-      if (!/\.docx?$/i.test(file.name)) { this.$message.error('仅支持 .doc .docx'); this.$refs.upload.clearFiles(); return }
-      if (file.size > 50*1024*1024) { this.$message.error('文件不超过50MB'); this.$refs.upload.clearFiles(); return }
-      if (this.uploadedFiles.length >= 1) { this.$message.error('最多1份'); this.$refs.upload.clearFiles(); return }
+      if (!/\.docx?$/i.test(file.name)) { 
+        this.$message.error('仅支持 .doc .docx'); 
+        this.uploadedFiles = []; 
+        this.fileList = [];
+        this.$refs.upload.clearFiles(); 
+        return 
+      }
+      if (file.size > 50*1024*1024) {
+         this.$message.error('文件不超过50MB'); 
+         this.uploadedFiles = [];
+         this.fileList = [];
+         this.$refs.upload.clearFiles();
+         return 
+      }
+      if (this.uploadedFiles.length >= 1) { 
+         this.$message.error('仅支持单个文件');
+         this.uploadedFiles = [];
+         this.fileList = [];
+         this.$refs.upload.clearFiles();
+         return 
+      }
       const raw = file.raw
       const tempId = '_tmp_' + Date.now()
       this.uploadedFiles.push({ id: tempId, name: raw.name, size: this.formatSize(raw.size), status: 'uploading', raw })
