@@ -18,9 +18,9 @@
         </el-table-column>
         <el-table-column label="状态" width="90">
           <template slot-scope="{ row }">
-            <el-tag v-if="row.status==='completed'" type="success" size="mini">{{ row.status }}</el-tag>
-            <el-tag v-else-if="row.status==='failed'" type="danger" size="mini">{{ row.status }}</el-tag>
-            <el-tag v-else-if="row.status==='generating'" type="warning" size="mini">{{ row.status }}</el-tag>
+            <el-tag v-if="row.status==='completed'" type="success" size="mini">已完成</el-tag>
+            <el-tag v-else-if="row.status==='failed'" type="danger" size="mini">已失败</el-tag>
+            <el-tag v-else-if="row.status==='generating'" type="warning" size="mini">生成中</el-tag>
             <span v-else>{{ row.status }}</span>
           </template>
         </el-table-column>
@@ -58,7 +58,12 @@
         <div class="dialog-meta">
           <span>模板：{{ detail.file_name }}</span>
           <span>生成时间：{{ detail.generated_at }}</span>
-          <span>状态：<el-tag v-if="detail.status==='completed'" type="success" size="mini">{{ detail.status }}</el-tag><el-tag v-else-if="detail.status==='failed'" type="danger" size="mini">{{ detail.status }}</el-tag><el-tag v-else-if="detail.status==='generating'" type="warning" size="mini">{{ detail.status }}</el-tag><span v-else>{{ detail.status }}</span></span>
+          <span>状态：
+            <el-tag v-if="detail.status==='completed'" type="success" size="mini">已完成</el-tag>
+            <el-tag v-else-if="detail.status==='failed'" type="danger" size="mini">已失败</el-tag>
+            <el-tag v-else-if="detail.status==='generating'" type="warning" size="mini">生成中</el-tag>
+            <span v-else>{{ detail.status }}</span>
+          </span>
           <span>进度：{{ detail.progress || 0 }}%</span>
         </div>
         <div class="dialog-section">
