@@ -98,3 +98,52 @@ type ContractReviewItem struct {
 func (i *ContractReviewItem) BeforeCreate(tx *gorm.DB) error {
 	return i.BaseModel.BeforeCreate(tx)
 }
+
+// ===== 合同要素提取 =====
+
+// ExtractFieldConfig 要素字段配置
+type ExtractFieldConfig struct {
+	Name        string `json:"name" gorm:"-"`
+	Description string `json:"description" gorm:"-"`
+	DataType    string `json:"data_type" gorm:"-"` // text,number,date,amount,enum
+	Required    bool   `json:"required" gorm:"-"`
+	Multi       bool   `json:"multi" gorm:"-"`
+}
+
+// ContractExtractTask 提取任务
+type ContractExtractTask struct {
+	BaseModel
+	UserID     uuid.UUID      `gorm:"type:uuid;not null;index" json:"user_id"`
+	TaskName   string         `gorm:"size:256" json:"task_name"`
+	FileIDs    string         `gorm:"type:text" json:"-"`          // JSON array of file IDs
+	FileNames  string         `gorm:"type:text" json:"-"`          // JSON array of file names
+	Fields     string         `gorm:"type:text" json:"-"`          // JSON array of ExtractFieldConfig
+	Status     string         `gorm:"size:32;default:pending" json:"status"`
+	Progress   int            `gorm:"default:0" json:"progress"`
+	TotalFiles int            `gorm:"default:0" json:"total_files"`
+	DoneFiles  int            `gorm:"default:0" json:"done_files"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  time.Time      `json:"updated_at"`
+	DeletedAt  gorm.DeletedAt `gorm:"index" json:"-"`
+}
+
+func (t *ContractExtractTask) BeforeCreate(tx *gorm.DB) error {
+	return t.BaseModel.BeforeCreate(tx)
+}
+
+// ContractExtractResult 单个文档的提取结果
+type ContractExtractResult struct {
+	BaseModel
+	TaskID   uuid.UUID `gorm:"type:uuid;not null;index" json:"task_id"`
+	FileID   string    `gorm:"size:128" json:"file_id"`
+	FileName string    `gorm:"size:512" json:"file_name"`
+	Results  string    `gorm:"type:text" json:"-"` // JSON: map[fieldName] -> {value, confidence, error}
+	Status   string    `gorm:"size:32;default:pending" json:"status"`
+	ErrorMsg string    `gorm:"type:text" json:"error_msg"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (r *ContractExtractResult) BeforeCreate(tx *gorm.DB) error {
+	return r.BaseModel.BeforeCreate(tx)
+}

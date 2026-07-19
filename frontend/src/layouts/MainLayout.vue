@@ -41,6 +41,20 @@
             <span slot="title">我的审查</span>
           </el-menu-item>
         </el-submenu>
+        <el-submenu index="/extract">
+          <template slot="title">
+            <i class="el-icon-document-copy"></i>
+            <span slot="title">要素提取</span>
+          </template>
+          <el-menu-item index="/contract-extract">
+            <i class="el-icon-document-copy"></i>
+            <span slot="title">要素提取</span>
+          </el-menu-item>
+          <el-menu-item index="/contract-extract-history">
+            <i class="el-icon-folder-opened"></i>
+            <span slot="title">我的要素提取</span>
+          </el-menu-item>
+        </el-submenu>
         <el-submenu index="/draft">
           <template slot="title">
             <i class="el-icon-edit-outline"></i>

@@ -70,6 +70,26 @@ const (
 	ContractDraftStatusFailedDesc     = "生成失败"
 )
 
+// 合同要素提取状态
+const (
+	ContractExtractStatusPending    = "pending"    // 待提取
+	ContractExtractStatusExtracting = "extracting" // 提取中
+	ContractExtractStatusCompleted  = "completed"  // 提取完成
+	ContractExtractStatusRejected   = "rejected"   // 提取被拒绝
+	ContractExtractStatusCanceled   = "canceled"   // 提取取消
+	ContractExtractStatusFailed     = "failed"     // 提取失败
+)
+
+// 合同要素提取状态描述
+const (
+	ContractExtractStatusPendingDesc    = "待提取"
+	ContractExtractStatusExtractingDesc = "提取中"
+	ContractExtractStatusCompletedDesc  = "提取完成"
+	ContractExtractStatusRejectedDesc   = "提取被拒绝"
+	ContractExtractStatusCanceledDesc   = "提取取消"
+	ContractExtractStatusFailedDesc     = "提取失败"
+)
+
 // ============ 分页 ============
 const (
 	DefaultPage      = 1

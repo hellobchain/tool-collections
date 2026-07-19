@@ -110,6 +110,15 @@ func main() {
 		apiGroup.DELETE("/contract/v1/history/:reportId", handlers.DeleteHistory)
 		apiGroup.GET("/contract/v1/report/:reportId/export", handlers.ExportReport)
 
+		// Contract Extract
+		apiGroup.POST("/contract/v1/extract/start", handlers.StartExtract)
+		apiGroup.GET("/contract/v1/extract/:taskId/progress", handlers.GetExtractProgress)
+		apiGroup.GET("/contract/v1/extract/:taskId/result", handlers.GetExtractResult)
+		apiGroup.PUT("/contract/v1/extract/result/:resultId/cell", handlers.UpdateExtractCell)
+		apiGroup.GET("/contract/v1/extract/history", handlers.GetExtractHistory)
+		apiGroup.DELETE("/contract/v1/extract/:taskId", handlers.DeleteExtractTask)
+		apiGroup.GET("/contract/v1/extract/:taskId/export", handlers.ExportExtractResult)
+
 		// Contract Draft (static routes before :param routes)
 		apiGroup.GET("/contract/v1/draft/history", handlers.GetDraftHistory)
 		apiGroup.GET("/contract/v1/draft/history/:draftId", handlers.GetDraftDetail)

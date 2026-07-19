@@ -43,6 +43,8 @@ func InitDB() {
 		&models.ContractReview{},
 		&models.ContractReviewItem{},
 		&models.ContractDraft{},
+		&models.ContractExtractTask{},
+		&models.ContractExtractResult{},
 	)
 	if err != nil {
 		slog.Fatal("Failed to migrate database:", err)
