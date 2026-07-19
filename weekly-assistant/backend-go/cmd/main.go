@@ -26,6 +26,7 @@ func main() {
 
 	// 创建Gin引擎
 	r := gin.New()
+	r.HandleMethodNotAllowed = true
 	gin.SetMode(config.AppConfig.GinMode)
 	r.Use(gin.Recovery())
 	r.Use(ginlog.Logger()) // 设置路由日志
