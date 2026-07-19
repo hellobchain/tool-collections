@@ -52,7 +52,7 @@
           </el-menu-item>
           <el-menu-item index="/contract-extract-history">
             <i class="el-icon-folder-opened"></i>
-            <span slot="title">我的要素提取</span>
+            <span slot="title">我的提取</span>
           </el-menu-item>
         </el-submenu>
         <el-submenu index="/draft">
