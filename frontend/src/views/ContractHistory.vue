@@ -237,12 +237,12 @@ export default {
 
 <style scoped>
 .contract-history { height: 100%; display: flex; flex-direction: column; overflow: auto; }
-.page-header { background: #fff; padding: 16px 32px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
-.page-header h2 { font-size: 20px; margin: 0; color: #333; }
-.filter-card { margin: 12px 32px; border-radius: 4px; }
-.filter-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.list-card { margin: 0 32px 12px; flex: 1; overflow: auto; }
-.pagination-wrap { display: flex; justify-content: flex-end; padding: 12px 0 0; }
+.page-header { background: #fff; padding: 8px 20px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
+.page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.filter-card { margin: 0; border-top: none; border-radius: 0; }
+.filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px; }
+.list-card { margin: 0; border-top: none; border-radius: 0; flex: 1; overflow: auto; }
+.pagination-wrap { display: flex; justify-content: flex-end; padding: 8px 16px 8px; }
 .dialog-report { padding: 0 16px; }
 .dialog-overview { margin-bottom: 20px; }
 .dialog-overview h3 { font-size: 18px; margin: 0 0 12px; }
@@ -250,7 +250,7 @@ export default {
 .dialog-meta .meta-contractType { color: green; }
 .dialog-meta .meta-position { color: #e6a23c; }
 .dialog-meta .meta-standards { color: #409eff; }
-.risk-stat { display: flex; gap: 24px; margin-bottom: 12px; }
+.risk-stat { display: flex; gap: 12px; margin-bottom: 4px; }
 .risk-item { display: flex; align-items: center; gap: 6px; font-size: 14px; }
 .risk-num { font-size: 24px; font-weight: 700; }
 .risk-item.high .risk-num { color: #f56c6c; }

@@ -40,7 +40,7 @@
             </el-form-item>
           </el-form>
 
-          <div class="action-bar">
+          <div class="action-bar" style="text-align: center;">
             <el-button type="primary" :loading="converting" :disabled="!selectedFile" @click="handleConvert">
               {{ converting ? '转换中...' : '开始转换' }}
             </el-button>
@@ -68,7 +68,7 @@
         </el-card>
 
         <el-card class="options-card">
-          <div class="action-bar">
+          <div class="action-bar" style="text-align: center;">
             <el-button type="primary" :loading="mdConverting" :disabled="!mdSelectedFile" @click="handleMdConvert">
               {{ mdConverting ? '转换中...' : '开始转换' }}
             </el-button>
@@ -300,22 +300,17 @@ export default {
   font-size: 14px;
   margin: 0;
 }
-.upload-card,
 .options-card,
 .result-card {
   border-radius: 0;
   border-top: 0;
   margin-bottom: 0;
 }
-.upload-card >>> .el-upload-dragger {
-  margin-bottom: 0;
-}
-.upload-card >>> .el-upload__tip {
-  margin-top: 0;
-}
-.upload-card >>> .el-card__body {
-  padding: 20px 32px;
-}
+.upload-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.upload-card >>> .el-upload-dragger { margin-bottom: 0; width: 100%; }
+.upload-card >>> .el-card__body { padding: 12px 16px; }
+.upload-card >>> .el-upload { width: 100%; }
+.upload-card >>> .el-upload-dragger { width: 100%; padding: 16px; }
 .options-card >>> .el-card__body {
   padding: 20px 32px;
 }

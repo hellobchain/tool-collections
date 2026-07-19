@@ -238,21 +238,25 @@ export default {
 
 <style scoped>
 .extract-page { height: 100%; display: flex; flex-direction: column; overflow: auto; }
-.page-header { background: #fff; padding: 16px 32px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
-.page-header h2 { font-size: 20px; margin: 0 0 4px; color: #333; }
-.page-desc { color: #999; font-size: 14px; margin: 0; }
-.extract-steps { padding: 24px 32px; background: #fff; border-bottom: 1px solid #e4e7ed; }
-.step-content { flex: 1; padding: 16px 32px; overflow: auto; }
-.upload-card { margin-bottom: 12px; }
-.step-actions { display: flex; gap: 12px; justify-content: center; padding: 16px 0; }
-.field-card { margin-bottom: 12px; }
+.page-header { background: #fff; padding: 8px 20px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
+.page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.page-desc { display: none; }
+.extract-steps { padding: 10px 20px; background: #fff; border-bottom: 1px solid #e4e7ed; }
+.step-content { flex: 1; padding: 0; overflow: auto; }
+.upload-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.upload-card >>> .el-upload-dragger { margin-bottom: 0; width: 100%; }
+.upload-card >>> .el-card__body { padding: 12px 16px; }
+.upload-card >>> .el-upload { width: 100%; }
+.upload-card >>> .el-upload-dragger { width: 100%; padding: 16px; }
+.step-actions { display: flex; gap: 8px; justify-content: center; padding: 8px 0; }
+.field-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .field-empty { text-align: center; color: #999; padding: 20px; }
-.template-card { margin-bottom: 12px; }
+.template-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .template-tag { cursor: pointer; margin: 0 4px 4px 0; }
-.progress-card { margin-bottom: 12px; }
+.progress-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .progress-step { margin-top: 8px; color: #409eff; font-size: 13px; }
-.result-card { margin-bottom: 12px; }
+.result-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .result-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
 .result-title { flex: 1; font-weight: 600; font-size: 15px; }
 </style>

@@ -148,10 +148,10 @@ export default {
 
 <style scoped>
 .draft-history { height: 100%; display: flex; flex-direction: column; overflow: auto; }
-.page-header { background: #fff; padding: 16px 32px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
-.page-header h2 { font-size: 20px; margin: 0; color: #333; }
-.list-card { margin: 12px 32px; flex: 1; overflow: auto; }
-.pagination-wrap { display: flex; justify-content: flex-end; padding: 12px 0 0; }
+.page-header { background: #fff; padding: 8px 20px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
+.page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.list-card { margin: 0; border-top: none; border-radius: 0; flex: 1; overflow: auto; }
+.pagination-wrap { display: flex; justify-content: flex-end; padding: 8px 16px; }
 .dialog-body { padding: 0 16px; }
 .dialog-meta { display: flex; gap: 20px; font-size: 13px; color: #666; margin-bottom: 16px; }
 .dialog-section { margin-bottom: 20px; }

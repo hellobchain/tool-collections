@@ -529,18 +529,22 @@ export default {
 }
 .page-header {
   background: #fff;
-  padding: 16px 32px;
+  padding: 8px 20px;
   border-bottom: 1px solid #e4e7ed;
   flex-shrink: 0;
 }
-.page-header h2 { font-size: 20px; margin: 0 0 4px; color: #333; }
-.page-desc { color: #999; font-size: 14px; margin: 0; }
-.review-steps { padding: 24px 32px; background: #fff; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
-.step-content { flex: 1; padding: 16px 32px; overflow: auto; }
-.upload-card { margin-bottom: 12px; }
-.upload-card >>> .el-upload-dragger { margin-bottom: 0; }
-.file-list-card { margin-bottom: 12px; }
-.file-list-header { font-size: 14px; color: #333; margin-bottom: 12px; }
+.page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.page-desc { display: none; }
+.review-steps { padding: 10px 20px; background: #fff; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
+.step-content { flex: 1; padding: 0; overflow: auto; }
+.upload-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.upload-card >>> .el-upload-dragger { margin-bottom: 0; width: 100%; }
+.upload-card >>> .el-card__body { padding: 12px 16px; }
+.upload-card >>> .el-upload { width: 100%; }
+.upload-card >>> .el-upload-dragger { width: 100%; padding: 16px; }
+.file-list-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.file-list-card >>> .el-card__body { padding: 8px 16px; }
+.file-list-header { font-size: 13px; color: #333; margin-bottom: 4px; }
 .file-item { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
 .file-item:last-child { border-bottom: none; }
 .file-info { display: flex; align-items: center; gap: 8px; }
@@ -548,29 +552,28 @@ export default {
 .file-name { color: #333; }
 .file-size { color: #999; font-size: 12px; }
 .file-status { display: flex; align-items: center; gap: 8px; }
-.config-hint { font-size: 14px; color: #606266; margin-bottom: 16px; padding: 10px 16px; background: #ecf5ff; border-radius: 4px; border-left: 4px solid #409eff; }
-.config-card { margin-bottom: 12px; }
-.position-block { margin-bottom: 10px; }
-.position-block .el-radio.is-bordered { margin-bottom: 6px; }
-.position-focus { font-size: 12px; color: #909399; line-height: 1.5; padding: 4px 0 2px 28px; }
-.standard-block { margin-bottom: 10px; }
-.standard-block .el-checkbox.is-bordered { margin-bottom: 6px; }
-.standard-meta { display: flex; align-items: center; gap: 10px; padding: 2px 0 2px 28px; }
-.standard-desc { font-size: 12px; color: #909399; }
-.summary-card { margin-bottom: 12px; }
+.config-hint { font-size: 13px; color: #606266; margin-bottom: 6px; padding: 6px 12px; background: #ecf5ff; border-radius: 4px; border-left: 4px solid #409eff; }
+.config-card { margin-bottom: 6px; }
+.position-block { margin-bottom: 6px; }
+.position-block .el-radio.is-bordered { margin-bottom: 4px; }
+.position-focus { font-size: 12px; color: #909399; line-height: 1.4; padding: 2px 0 0 28px; }
+.standard-block { margin-bottom: 6px; }
+.standard-block .el-checkbox.is-bordered { margin-bottom: 4px; }
+.standard-meta { display: flex; align-items: center; gap: 8px; padding: 2px 0 0 28px; }
+.summary-card { margin-bottom: 6px; }
 .summary-card .summary-tag { float: right; font-size: 13px; color: #67c23a; font-weight: 400; }
 .summary-card .summary-tag em { font-size: 18px; font-weight: 700; font-style: normal; }
-.summary-item { text-align: center; padding: 8px 0; }
-.summary-item label { display: block; font-size: 12px; color: #909399; margin-bottom: 4px; }
-.summary-item .sv { font-size: 14px; color: #333; font-weight: 600; }
-.step-actions { display: flex; gap: 12px; justify-content: center; padding: 16px 0; }
-.report-layout { display: flex; gap: 16px; }
+.summary-item { text-align: center; padding: 4px 0; }
+.summary-item label { display: block; font-size: 11px; color: #909399; margin-bottom: 2px; }
+.summary-item .sv { font-size: 13px; color: #333; font-weight: 600; }
+.step-actions { display: flex; gap: 8px; justify-content: center; padding: 8px 0; }
+.report-layout { display: flex; gap: 8px; }
 .report-main { flex: 1; min-width: 0; }
 .contract-text-panel { width: 400px; flex-shrink: 0; background: #fff; border: 1px solid #e4e7ed; border-radius: 4px; display: flex; flex-direction: column; max-height: calc(100vh - 300px); }
 .panel-header { padding: 12px 16px; font-weight: 600; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
 .panel-content { padding: 16px; overflow: auto; flex: 1; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-break: break-all; }
 .panel-content >>> mark.highlight { background: #ffd666; padding: 0 2px; }
-.overview-card { margin-bottom: 12px; }
+.overview-card { margin-bottom: 6px; }
 .overview-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .overview-title { font-size: 16px; font-weight: 600; color: #333; }
 .overview-actions { display: flex; gap: 8px; }
@@ -582,14 +585,14 @@ export default {
 .risk-item.medium .risk-num { color: #e6a23c; }
 .risk-item.low .risk-num { color: #409eff; }
 .risk-item.pass .risk-num { color: #67c23a; }
-.progress-card { margin-bottom: 12px; }
-.progress-info { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #666; }
+.progress-card { margin-bottom: 6px; }
+.progress-info { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; color: #666; }
 .current-rule { color: #409eff; }
-.progress-risk { margin-top: 8px; font-size: 13px; color: #666; }
-.filter-card { margin-bottom: 12px; }
+.progress-risk { margin-top: 4px; font-size: 12px; color: #666; }
+.filter-card { margin-bottom: 6px; }
 .filter-bar { display: flex; align-items: center; gap: 12px; }
-.risk-list { display: flex; flex-direction: column; gap: 8px; }
-.risk-item-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 4px; padding: 12px 16px; border-left: 4px solid #e4e7ed; }
+.risk-list { display: flex; flex-direction: column; gap: 4px; }
+.risk-item-card { background: #fff; border: 1px solid #e4e7ed; border-radius: 4px; padding: 6px 12px; border-left: 4px solid #e4e7ed; }
 .risk-item-card.level-high { border-left-color: #f56c6c; }
 .risk-item-card.level-medium { border-left-color: #e6a23c; }
 .risk-item-card.level-low { border-left-color: #409eff; }
@@ -598,7 +601,7 @@ export default {
 .risk-rule-name { flex: 1; font-weight: 600; color: #333; }
 .risk-item-actions { display: flex; gap: 4px; }
 .risk-item-body { margin-bottom: 4px; }
-.risk-field { margin: 4px 0; font-size: 13px; line-height: 1.6; }
+.risk-field { margin: 2px 0; font-size: 13px; line-height: 1.5; }
 .risk-field label { color: #999; }
 .original-text { color: #606266; cursor: pointer; border-bottom: 1px dashed #dcdfe6; }
 .original-text:hover { color: #409eff; }

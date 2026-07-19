@@ -243,29 +243,33 @@ export default {
 }
 .page-header {
   background: #fff;
-  padding: 16px 32px;
+  padding: 8px 20px;
   border-bottom: 1px solid #e4e7ed;
   flex-shrink: 0;
 }
-.page-header h2 { font-size: 20px; margin: 0 0 4px; color: #333; }
-.page-desc { color: #999; font-size: 14px; margin: 0; }
-.draft-steps { padding: 24px 32px; background: #fff; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
-.step-content { flex: 1; padding: 16px 32px; overflow: auto; }
-.upload-card { margin-bottom: 12px; }
-.req-card { margin-bottom: 12px; }
-.req-card >>> .el-card__body { padding: 16px 24px; }
+.page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.page-desc { display: none; }
+.draft-steps { padding: 10px 20px; background: #fff; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
+.step-content { flex: 1; padding: 0; overflow: auto; }
+.upload-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.upload-card >>> .el-upload-dragger { margin-bottom: 0; width: 100%; }
+.upload-card >>> .el-card__body { padding: 12px 16px; }
+.upload-card >>> .el-upload { width: 100%; }
+.upload-card >>> .el-upload-dragger { width: 100%; padding: 16px; }
+.req-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.req-card >>> .el-card__body { padding: 8px 16px; }
 .req-count { text-align: right; font-size: 12px; color: #999; margin-top: 4px; }
-.step-actions { display: flex; gap: 12px; justify-content: center; padding: 16px 0; }
-.progress-card { max-width: 600px; margin: 40px auto; }
-.progress-info { margin-bottom: 12px; font-size: 14px; color: #666; }
-.progress-detail { margin-top: 12px; font-size: 13px; color: #409eff; }
-.result-card { margin-bottom: 12px; }
+.step-actions { display: flex; gap: 8px; justify-content: center; padding: 8px 0; }
+.progress-card { max-width: 600px; margin: 0 auto; border-top: none; border-radius: 0; }
+.progress-info { margin-bottom: 6px; font-size: 14px; color: #666; }
+.progress-detail { margin-top: 6px; font-size: 13px; color: #409eff; }
+.result-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .result-title { font-size: 16px; font-weight: 600; }
 .result-actions { display: flex; gap: 8px; }
 .result-meta { display: flex; gap: 20px; font-size: 13px; color: #999; margin-bottom: 12px; }
 .result-preview { border: 1px solid #e4e7ed; border-radius: 4px; max-height: 60vh; overflow: auto; }
 .preview-content { white-space: pre-wrap; word-break: break-all; line-height: 1.8; font-size: 13px; padding: 16px; margin: 0; }
-.changelog-card { margin-bottom: 12px; }
+.changelog-card { margin-bottom: 0; border-top: none; border-radius: 0; }
 .changelog-content { white-space: pre-wrap; font-size: 13px; line-height: 1.6; margin: 0; }
 </style>
