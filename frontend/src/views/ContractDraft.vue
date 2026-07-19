@@ -75,13 +75,13 @@
           <span>生成时间：{{ generateTime }}</span>
         </div>
         <div class="result-preview">
-          <pre class="preview-content">{{ renderMd(draftContent) }}</pre>
+          <div class="draftContent-md" v-html="renderMd(draftContent)"></div>
         </div>
       </el-card>
 
       <el-card class="changelog-card" v-if="changeLog">
         <div slot="header">📝 条款变更说明</div>
-        <pre class="changelog-content">{{ renderMd(changeLog) }}</pre>
+        <div class="changelog-md" v-html="renderMd(changeLog)"></div>
       </el-card>
     </div>
   </div>
