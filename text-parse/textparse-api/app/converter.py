@@ -3,7 +3,6 @@ import shutil
 from pathlib import Path
 from typing import Dict, Any, Optional
 import zipfile
-import io
 import tempfile
 
 from lxml import etree

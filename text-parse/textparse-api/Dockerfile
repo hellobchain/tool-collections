@@ -6,7 +6,9 @@ WORKDIR /build
 RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu
+
 
 
 # ========== 运行阶段 ==========
