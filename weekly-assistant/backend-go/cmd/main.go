@@ -127,6 +127,9 @@ func main() {
 		apiGroup.GET("/contract/v1/draft/:taskId/progress", handlers.GetDraftProgress)
 		apiGroup.GET("/contract/v1/draft/:taskId/result", handlers.GetDraftResult)
 		apiGroup.GET("/contract/v1/draft/:taskId/download", handlers.DownloadDraft)
+
+		// JSON Compare
+		apiGroup.POST("/json-compare/v1/compare", handlers.JsonCompare)
 	}
 
 	// 启动周报自动生成定时任务

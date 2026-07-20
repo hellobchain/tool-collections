@@ -1,5 +1,9 @@
 import api from './index'
 
+export function jsonCompare(jsonA, jsonB) {
+  return api.post('/weekly-assistant/json-compare/v1/compare', { json_a: jsonA, json_b: jsonB })
+}
+
 export function convertFile(file, toFormats, doOcr = true) {
   const formData = new FormData()
   formData.append('file', file)

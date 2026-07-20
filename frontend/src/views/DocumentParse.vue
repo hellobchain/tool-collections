@@ -55,6 +55,53 @@
         </el-card>
       </el-tab-pane>
 
+      <el-tab-pane label="JSON 比对" name="jsonCompare">
+        <div class="compare-layout">
+          <div class="compare-inputs">
+            <el-card class="compare-card">
+              <div slot="header">JSON A <el-tag size="mini" type="danger">旧</el-tag></div>
+              <el-input type="textarea" v-model="jsonA" :rows="12" placeholder="粘贴或输入第一个 JSON..." class="json-input" />
+            </el-card>
+            <el-card class="compare-card">
+              <div slot="header">JSON B <el-tag size="mini" type="success">新</el-tag></div>
+              <el-input type="textarea" v-model="jsonB" :rows="12" placeholder="粘贴或输入第二个 JSON..." class="json-input" />
+            </el-card>
+          </div>
+          <div class="compare-action">
+            <el-button type="primary" :loading="comparing" :disabled="!jsonA || !jsonB" @click="handleJsonCompare">
+              {{ comparing ? '比对中...' : '开始比对' }}
+            </el-button>
+          </div>
+          <div v-if="compareResult" class="compare-result">
+            <el-card>
+              <div slot="header">
+                比对结果
+                <el-tag v-if="compareResult.match" type="success" size="mini" style="margin-left:8px">完全一致</el-tag>
+                <el-tag v-else type="warning" size="mini" style="margin-left:8px">{{ compareResult.differences.length }} 处差异</el-tag>
+              </div>
+              <div v-if="!compareResult.match" class="diff-list">
+                <div v-for="(d, i) in compareResult.differences" :key="i" class="diff-item" :class="'diff-' + d.type">
+                  <div class="diff-path">{{ d.path }}</div>
+                  <div class="diff-type">
+                    <el-tag v-if="d.type==='added'" type="success" size="mini">新增</el-tag>
+                    <el-tag v-else-if="d.type==='removed'" type="danger" size="mini">删除</el-tag>
+                    <el-tag v-else type="warning" size="mini">修改</el-tag>
+                  </div>
+                  <div class="diff-values">
+                    <div v-if="d.old_value !== undefined" class="diff-old">
+                      <span class="diff-label">旧值：</span><code>{{ formatValue(d.old_value) }}</code>
+                    </div>
+                    <div v-if="d.new_value !== undefined" class="diff-new">
+                      <span class="diff-label">新值：</span><code>{{ formatValue(d.new_value) }}</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </el-card>
+          </div>
+        </div>
+      </el-tab-pane>
+
       <el-tab-pane label="MD 转 Word" name="md2docx">
         <el-card class="upload-card">
           <el-upload
@@ -104,7 +151,7 @@
 </template>
 
 <script>
-import { convertFile, mdFile2DocxFile } from '@/api/document'
+import { convertFile, mdFile2DocxFile, jsonCompare } from '@/api/document'
 
 export default {
   name: 'DocumentParse',
@@ -125,6 +172,11 @@ export default {
       // shared result
       resultBlob: null,
       resultFileName: '',
+      // mode 3: json compare
+      jsonA: '',
+      jsonB: '',
+      comparing: false,
+      compareResult: null,
       allowedTypes: [
       'application/pdf',
       'application/msword',
@@ -294,6 +346,25 @@ export default {
       }
     },
     // === shared ===
+    // === mode 3: json compare ===
+    async handleJsonCompare() {
+      if (!this.jsonA || !this.jsonB) return
+      this.comparing = true
+      try {
+        const res = await jsonCompare(this.jsonA, this.jsonB)
+        this.compareResult = res.data.data || res.data
+      } catch (err) {
+        this.$message.error(err.response?.data?.msg || err.message || '比对失败')
+      } finally {
+        this.comparing = false
+      }
+    },
+    formatValue(v) {
+      if (v === null) return 'null'
+      if (v === undefined) return ''
+      if (typeof v === 'object') return JSON.stringify(v, null, 2)
+      return String(v)
+    },
     handleDownload() {
       if (!this.resultBlob) return
       const url = URL.createObjectURL(this.resultBlob)
@@ -357,6 +428,23 @@ export default {
 .action-bar {
   padding-top: 8px;
 }
+.compare-layout { padding: 16px 0; }
+.compare-inputs { display: flex; gap: 16px; }
+.compare-card { flex: 1; }
+.compare-card >>> .el-card__header { font-weight: 600; font-size: 14px; }
+.json-input >>> textarea { font-family: 'Courier New', monospace; font-size: 13px; }
+.compare-action { text-align: center; padding: 16px 0; }
+.compare-result { margin-top: 0; }
+.diff-list { max-height: 500px; overflow-y: auto; }
+.diff-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+.diff-item:last-child { border-bottom: none; }
+.diff-path { font-family: 'Courier New', monospace; font-size: 13px; color: #409eff; font-weight: 600; margin-bottom: 4px; }
+.diff-type { margin-bottom: 4px; }
+.diff-values { font-size: 13px; }
+.diff-label { color: #999; }
+.diff-old code { color: #f56c6c; background: #fef0f0; }
+.diff-new code { color: #67c23a; background: #f0f9eb; }
+.diff-values code { display: inline-block; padding: 1px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 12px; white-space: pre-wrap; max-width: 100%; word-break: break-all; }
 .result-header {
   display: flex;
   align-items: center;
