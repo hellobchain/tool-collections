@@ -19,10 +19,10 @@ instance.interceptors.request.use(config => {
 instance.interceptors.response.use(
   // 在成功回调中判断业务 code
   (response) => {
-    // 二进制流直接返回
-    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
-      return response
-    }
+    // // 二进制流直接返回
+    // if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
+    //   return response
+    // }
     const { code, msg, data } = response.data
     // 业务成功
     if (code === SUCCESS_CODE) {

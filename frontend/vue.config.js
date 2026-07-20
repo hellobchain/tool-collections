@@ -13,6 +13,10 @@ module.exports = {
       '/weekly-assistant': {
         target: 'http://localhost:80',
         changeOrigin: true
+      },
+      '/md2docx': {
+        target: 'http://localhost:80',
+        changeOrigin: true
       }
     }
   }
