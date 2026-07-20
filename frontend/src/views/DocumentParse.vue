@@ -282,8 +282,6 @@ export default {
             }
           }
           reader.readAsText(err.response.data)
-        } else {
-          this.$message.error(err.message || '请求失败')
         }
       } finally {
         this.converting = false
@@ -338,8 +336,6 @@ export default {
             }
           }
           reader.readAsText(err.response.data)
-        } else {
-          this.$message.error(err.message || '请求失败')
         }
       } finally {
         this.mdConverting = false
