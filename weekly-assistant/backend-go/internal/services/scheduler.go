@@ -21,6 +21,10 @@ var slog = wlogging.MustGetLoggerWithoutName()
 // StartAutoWeeklyScheduler 启动周报自动生成定时任务
 // 根据配置的 CronSchedule 自动为所有用户执行：生成草稿 → 定稿归档
 func StartAutoWeeklyScheduler() {
+	if !config.AppConfig.SchedulerEnable {
+		slog.Infof("auto weekly scheduler disabled")
+		return
+	}
 	cronExpr := config.AppConfig.CronSchedule
 	s := gocron.NewScheduler(time.Local)
 	_, err := s.Cron(cronExpr).Do(processAllUsers)

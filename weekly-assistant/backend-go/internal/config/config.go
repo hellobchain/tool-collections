@@ -38,7 +38,8 @@ type Config struct {
 	MinioRegion    string
 	MinioIsS3      bool
 
-	CronSchedule string
+	CronSchedule    string
+	SchedulerEnable bool
 
 	Port int
 
@@ -83,6 +84,8 @@ func LoadConfig() {
 	minioIsS3, _ := strconv.ParseBool(getEnv("MINIO_IS_S3", "false"))
 
 	closeRegister, _ := strconv.ParseBool(getEnv("CLOSE_REGISTER", "true"))
+
+	schedulerEnable, _ := strconv.ParseBool(getEnv("SCHEDULER_ENABLE", "true"))
 	AppConfig = &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     dbPort,
@@ -108,7 +111,8 @@ func LoadConfig() {
 		MinioRegion:    getEnv("MINIO_REGION", "us-east-1"),
 		MinioIsS3:      minioIsS3,
 
-		CronSchedule: getEnv("CRON_SCHEDULE", "0 15 * * 5"),
+		CronSchedule:    getEnv("CRON_SCHEDULE", "0 15 * * 5"),
+		SchedulerEnable: schedulerEnable,
 
 		Port:          port,
 		GinMode:       getEnv("GIN_MODE", "release"),
