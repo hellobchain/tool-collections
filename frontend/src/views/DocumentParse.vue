@@ -14,7 +14,7 @@
             drag
             action=""
             :auto-upload="false"
-            :show-file-list="true"
+            :show-file-list="false"
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"
             :file-list="fileList"
@@ -23,6 +23,13 @@
             <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
             <div slot="tip" class="el-upload__tip">支持PDF、Word、图片等多种格式，单文件不超过 50MB</div>
           </el-upload>
+        </el-card>
+        <el-card v-if="fileList.length" class="file-list-card">
+          <div v-for="f in fileList" :key="f.id" class="file-item">
+            <span class="file-name">{{ f.name }}</span>
+            <span class="file-size">{{ toKB(f.size) }}</span>
+            <el-button type="text" size="mini" icon="el-icon-delete" @click="removeFile(f)" style="color:#999;"/>
+          </div>
         </el-card>
 
         <el-card class="options-card">
@@ -55,7 +62,7 @@
             drag
             action=""
             :auto-upload="false"
-            :show-file-list="true"
+            :show-file-list="false"
             :on-change="handleMdFileChange"
             :on-remove="handleMdFileRemove"
             :file-list="mdFileList"
@@ -65,6 +72,13 @@
             <div class="el-upload__text">将 .md 文件拖到此处，或<em>点击选择</em></div>
             <div slot="tip" class="el-upload__tip">支持 Markdown（.md）格式，单文件不超过 20MB</div>
           </el-upload>
+        </el-card>
+        <el-card v-if="mdFileList.length" class="file-list-card">
+          <div v-for="f in mdFileList" :key="f.id" class="file-item">
+            <span class="file-name">{{ f.name }}</span>
+            <span class="file-size">{{ toKB(f.size) }}</span>
+            <el-button type="text" size="mini" icon="el-icon-delete" @click="removeMdFile(f)" style="color:#999;"/>
+          </div>
         </el-card>
 
         <el-card class="options-card">
@@ -125,6 +139,22 @@ export default {
     }
   },
   methods: {
+    toKB(bytes) {
+      if (!bytes) return '0 KB'
+      return (bytes / 1024).toFixed(2) + ' KB'
+    },
+    removeFile(file) {
+      this.fileList = this.fileList.filter(f => f.id !== file.id)
+      if (this.selectedFile && this.selectedFile.name === file.name) {
+        this.selectedFile = null
+      }
+    },
+    removeMdFile(file) {
+      this.mdFileList = this.mdFileList.filter(f => f.id !== file.id)
+      if (this.mdSelectedFile && this.mdSelectedFile.name === file.name) {
+        this.mdSelectedFile = null
+      }
+    },
     // === mode 1: format conversion ===
     handleFileRemove() {
       this.selectedFile = null
@@ -136,14 +166,14 @@ export default {
       const isValidType = this.checkFileType(file);
       if (!isValidType) {
         this.$message.error('仅支持 PDF、Word 文档和图片格式！');
-        this.fileList = [];
-        this.$refs.upload.clearFiles();
         return;
       }
       if (file.size > 50 * 1024 * 1024) {
         this.$message.error('文件大小不能超过 50MB！');
-        this.fileList = [];
-        this.$refs.upload.clearFiles();
+        return;
+      }
+      if (this.fileList.length > 0) {
+        this.$message.error('仅支持单个文件！');
         return;
       }
       this.fileList = [file]
@@ -217,14 +247,14 @@ export default {
     handleMdFileChange(file) {
       if (!/\.md$/i.test(file.name)) {
         this.$message.error('仅支持 .md 格式文件')
-        this.mdFileList = []
-        this.$refs.mdUpload.clearFiles()
         return
       }
       if (file.size > 20 * 1024 * 1024) {
         this.$message.error('文件大小不能超过 20MB')
-        this.mdFileList = []
-        this.$refs.mdUpload.clearFiles()
+        return
+      }
+      if (this.mdFileList.length > 0) {
+        this.$message.error('仅支持单个文件！')
         return
       }
       this.mdFileList = [file]
@@ -280,6 +310,11 @@ export default {
 </script>
 
 <style scoped>
+.file-item { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; font-size: 13px; color: #333; }
+.file-name { flex: 1; }
+.file-size { flex: 1; color: #999; font-size: 12px; text-align: left; }
+.file-list-card { margin-bottom: 0; border-top: none; border-radius: 0; }
+.file-list-card >>> .el-card__body { padding: 6px 16px; }
 .document-page {
   height: 100%;
   display: flex;

@@ -75,6 +75,25 @@ services:
     networks:
       - markitdown-network
 
+  md2docx-service:
+    image: md2docx-service:v1.0.0
+    ports:
+      - "8002:8002"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./results:/app/results
+    environment:
+      - API_KEY=${API_KEY:-your-secret-key}
+      - ENABLE_AUTH=true
+      - MAX_CONCURRENT_TASKS=10
+      - TASK_TIMEOUT=300
+      - PANDOC_TIMEOUT=60
+      - RESULT_RETENTION_HOURS=24
+      - WORKERS=4
+    restart: unless-stopped
+    networks:
+      - markitdown-network
+
 networks:
   markitdown-network:
     driver: bridge
