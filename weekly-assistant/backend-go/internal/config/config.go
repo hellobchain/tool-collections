@@ -46,6 +46,9 @@ type Config struct {
 
 	// gin
 	GinMode string
+
+	// CloseRegister bool
+	CloseRegister bool
 }
 
 // 初始化用户
@@ -78,6 +81,8 @@ func LoadConfig() {
 	dbLogLevel, _ := strconv.Atoi(getEnv("DB_LOG_LEVEL", "1"))
 
 	minioIsS3, _ := strconv.ParseBool(getEnv("MINIO_IS_S3", "false"))
+
+	closeRegister, _ := strconv.ParseBool(getEnv("CLOSE_REGISTER", "true"))
 	AppConfig = &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     dbPort,
@@ -105,8 +110,9 @@ func LoadConfig() {
 
 		CronSchedule: getEnv("CRON_SCHEDULE", "0 15 * * 5"),
 
-		Port:    port,
-		GinMode: getEnv("GIN_MODE", "release"),
+		Port:          port,
+		GinMode:       getEnv("GIN_MODE", "release"),
+		CloseRegister: closeRegister,
 	}
 
 	if AppConfig.JWTSecret == "" {

@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/hellobchain/weekly-assistant/internal/auth"
+	"github.com/hellobchain/weekly-assistant/internal/config"
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
 	"github.com/hellobchain/weekly-assistant/internal/models"
@@ -11,6 +12,11 @@ import (
 )
 
 func Register(c *gin.Context) {
+	// 注册关闭
+	if config.AppConfig.CloseRegister {
+		utils.ErrorWithMsg(c, utils.CodeServerError, "注册已关闭")
+		return
+	}
 	var req models.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, err.Error())
