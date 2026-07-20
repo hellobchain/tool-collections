@@ -38,7 +38,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="created_at" label="创建时间" width="150" />
-        <el-table-column label="操作" width="150" fixed="right">
+        <el-table-column label="操作" width="170" fixed="right">
           <template slot-scope="{ row }">
             <el-button type="text" size="mini" icon="el-icon-view" @click="viewDetail(row)">查看</el-button>
             <el-button type="text" size="mini" icon="el-icon-download" @click="handleExport(row)">导出</el-button>

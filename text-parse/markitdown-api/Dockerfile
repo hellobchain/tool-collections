@@ -1,5 +1,5 @@
 # ========== 构建阶段 ==========
-FROM python:3.10-slim as builder
+FROM python:3.14-slim as builder
 
 WORKDIR /build
 
@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 
 # ========== 运行阶段 ==========
-FROM python:3.10-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # 从构建阶段复制已安装的 Python 包
-COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+COPY --from=builder /usr/local/lib/python3.14/site-packages /usr/local/lib/python3.14/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # 复制项目代码（放在最后，利用缓存，代码变动不影响前面层）
