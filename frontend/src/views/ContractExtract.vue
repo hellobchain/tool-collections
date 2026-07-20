@@ -223,7 +223,7 @@ export default {
             this.$message.error('合同提取失败')
           }
         } catch { this.stopPolling() }
-      }, 10000)
+      }, 8000)
     },
     stopPolling() { if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null } },
     async fetchResult() {

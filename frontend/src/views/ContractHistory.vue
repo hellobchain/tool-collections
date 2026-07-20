@@ -6,7 +6,8 @@
 
     <el-card class="filter-card">
       <div class="filter-bar">
-        <el-date-picker v-model="dateRange" type="daterange" range-separator="~" start-placeholder="开始日期" end-placeholder="结束日期" size="small" value-format="yyyy-MM-dd" style="width:260px" />
+        <el-date-picker v-model="reviewStartDateRange" type="daterange" range-separator="~" start-placeholder="审查开始起" end-placeholder="审查开始止" size="small" value-format="yyyy-MM-dd" style="width:260px" />
+        <el-date-picker v-model="reviewEndDateRange" type="daterange" range-separator="~" start-placeholder="审查结束起" end-placeholder="审查结束止" size="small" value-format="yyyy-MM-dd" style="width:260px" />
         <el-select v-model="filterType" placeholder="合同类型" size="small" clearable style="width:150px">
           <el-option v-for="t in flatTypes" :key="t.value" :label="t.label" :value="t.value" />
         </el-select>
@@ -22,7 +23,7 @@
             <el-button type="text" @click="viewReport(row)">{{ row.file_name || row.name }}</el-button>
           </template>
         </el-table-column>
-        <el-table-column prop="contract_type_label" label="类型" width="100" />
+        <el-table-column prop="contract_type_label" label="合同类型" width="100" />
         <el-table-column prop="reviewer" label="审查人" width="100" />
         <el-table-column prop="review_start_time" label="审查开始时间" width="160" />
         <el-table-column prop="review_end_time" label="审查结束时间" width="160" />
@@ -144,7 +145,8 @@ export default {
     return {
       page: 1,
       pageSize: 15,
-      dateRange: null,
+      reviewStartDateRange: null,
+      reviewEndDateRange: null,
       filterType: '',
       searchText: '',
       detailVisible: false,
@@ -175,9 +177,13 @@ export default {
       const params = { page: this.page, page_size: this.pageSize }
       if (this.filterType) params.contract_type = this.filterType
       if (this.searchText) params.keyword = this.searchText
-      if (this.dateRange && this.dateRange.length === 2) {
-        params.start_date = this.dateRange[0]
-        params.end_date = this.dateRange[1]
+      if (this.reviewStartDateRange && this.reviewStartDateRange.length === 2) {
+        params.review_start_date_start = this.reviewStartDateRange[0]
+        params.review_start_date_end = this.reviewStartDateRange[1]
+      }
+      if (this.reviewEndDateRange && this.reviewEndDateRange.length === 2) {
+        params.review_end_date_start = this.reviewEndDateRange[0]
+        params.review_end_date_end = this.reviewEndDateRange[1]
       }
       this.$store.dispatch('contract/fetchHistory', params)
     },

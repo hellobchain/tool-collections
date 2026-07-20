@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -17,28 +16,6 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/models"
 	"github.com/hellobchain/weekly-assistant/internal/services"
 	"github.com/hellobchain/weekly-assistant/internal/utils"
-)
-
-type draftTask struct {
-	ID           string
-	UserID       string
-	FileID       string
-	FileName     string
-	Requirements string
-	TemplateText string
-	Status       string
-	Progress     int
-	CurrentStep  string
-	Content      string
-	ChangeLog    string
-	GeneratedAt  string
-	Error        string
-	CreatedAt    time.Time
-}
-
-var (
-	draftTasks   = make(map[string]*draftTask)
-	draftTasksMu sync.Mutex
 )
 
 func StartDraftGenerate(c *gin.Context) {
@@ -67,7 +44,6 @@ func StartDraftGenerate(c *gin.Context) {
 		return
 	}
 
-	// Create DB record immediately so history can show real-time progress
 	userUUID, _ := uuid.Parse(userID)
 	draftRecord := models.ContractDraft{
 		UserID:       userUUID,
@@ -82,43 +58,14 @@ func StartDraftGenerate(c *gin.Context) {
 		return
 	}
 
-	task := &draftTask{
-		ID:           draftRecord.ID.String(),
-		UserID:       userID,
-		FileID:       req.FileID,
-		FileName:     cf.FileName,
-		Requirements: req.Requirements,
-		Status:       constants.ContractDraftStatusGenerating,
-		CreatedAt:    time.Now(),
-	}
+	go runDraftAgent(draftRecord.ID.String(), userID, req.FileID, req.Requirements)
 
-	draftTasksMu.Lock()
-	draftTasks[task.ID] = task
-	draftTasksMu.Unlock()
-
-	go runDraftAgent(task)
-
-	utils.Success(c, gin.H{"task_id": task.ID})
+	utils.Success(c, gin.H{"task_id": draftRecord.ID.String()})
 }
 
 func GetDraftProgress(c *gin.Context) {
 	taskID := c.Param("taskId")
 
-	// Try in-memory task first (real-time during generation)
-	draftTasksMu.Lock()
-	task, ok := draftTasks[taskID]
-	draftTasksMu.Unlock()
-
-	if ok {
-		utils.Success(c, gin.H{
-			"percent":      task.Progress,
-			"current_step": task.CurrentStep,
-			"status":       task.Status,
-		})
-		return
-	}
-
-	// Fallback to DB (for completed/failed/historical)
 	var d models.ContractDraft
 	if err := database.DB.Where("id = ?", taskID).First(&d).Error; err != nil {
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "任务不存在")
@@ -127,54 +74,51 @@ func GetDraftProgress(c *gin.Context) {
 
 	utils.Success(c, gin.H{
 		"percent":      d.Progress,
-		"current_step": constants.ContractDraftStatusPendingDesc,
+		"current_step": getCurrentStepDesc(d.Status),
 		"status":       d.Status,
 	})
 }
 
 func GetDraftResult(c *gin.Context) {
 	taskID := c.Param("taskId")
-	draftTasksMu.Lock()
-	task, ok := draftTasks[taskID]
-	draftTasksMu.Unlock()
 
-	if !ok {
+	var d models.ContractDraft
+	if err := database.DB.Where("id = ?", taskID).First(&d).Error; err != nil {
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "任务不存在")
 		return
 	}
-	if task.Status != constants.ContractDraftStatusCompleted && task.Status != constants.ContractDraftStatusFailed {
+	if d.Status != constants.ContractDraftStatusCompleted && d.Status != constants.ContractDraftStatusFailed {
 		utils.ErrorWithMsg(c, utils.CodeError, "任务尚未完成")
 		return
 	}
 
 	utils.Success(c, gin.H{
-		"id":           task.ID,
-		"content":      task.Content,
-		"change_log":   task.ChangeLog,
-		"generated_at": task.GeneratedAt,
-		"file_name":    task.FileName,
+		"id":           d.ID.String(),
+		"content":      d.Content,
+		"change_log":   d.ChangeLog,
+		"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
+		"file_name":    d.FileName,
 	})
 }
 
 func DownloadDraft(c *gin.Context) {
 	taskID := c.Param("taskId")
-	draftTasksMu.Lock()
-	task, ok := draftTasks[taskID]
-	draftTasksMu.Unlock()
 
-	if !ok {
+	var d models.ContractDraft
+	if err := database.DB.Where("id = ?", taskID).First(&d).Error; err != nil {
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "任务不存在")
 		return
 	}
-	if task.Status != constants.ContractDraftStatusCompleted && task.Status != constants.ContractDraftStatusFailed {
+	if d.Status != constants.ContractDraftStatusCompleted && d.Status != constants.ContractDraftStatusFailed {
 		utils.ErrorWithMsg(c, utils.CodeError, "任务尚未完成")
 		return
 	}
 
+	generatedAt := d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS)
 	content := fmt.Sprintf("合同草案\n==============================\n\n生成时间：%s\n模板：%s\n\n%s\n\n条款变更说明\n==============================\n\n%s",
-		task.GeneratedAt, task.FileName, task.Content, task.ChangeLog)
+		generatedAt, d.FileName, d.Content, d.ChangeLog)
 
-	trueFileName := fmt.Sprintf("合同草案_%s.docx", strings.TrimSuffix(task.FileName, ".docx"))
+	trueFileName := fmt.Sprintf("合同草案_%s.docx", strings.TrimSuffix(d.FileName, ".docx"))
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document")
 	c.Header("Content-Disposition", fmt.Sprintf(`attachment; filename=%s`, utils.PercentEncode(trueFileName)))
 	c.Data(200, "application/vnd.openxmlformats-officedocument.wordprocessingml.document", []byte(content))
@@ -267,32 +211,26 @@ func truncateText(s string, maxLen int) string {
 }
 
 // runDraftAgent runs the LLM agent pipeline for contract drafting
-func runDraftAgent(task *draftTask) {
-	draftTasksMu.Lock()
-	task.Status = constants.ContractDraftStatusGenerating
-	draftTasksMu.Unlock()
-
+func runDraftAgent(taskID, userID, fileID, requirements string) {
 	llm := services.NewLLMService()
 
-	updateDB := func(pct int, status, step string) {
-		draftTasksMu.Lock()
-		task.Progress = pct
-		task.Status = status
-		task.CurrentStep = step
-		draftTasksMu.Unlock()
-		userUUID, _ := uuid.Parse(task.UserID)
-		database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", task.ID, userUUID).Updates(map[string]interface{}{
+	updateTask := func(pct int, status string) {
+		// Prevent progress from exceeding 100%
+		if pct >= 100 {
+			pct = 99
+		}
+		userUUID, _ := uuid.Parse(userID)
+		database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", taskID, userUUID).Updates(map[string]interface{}{
 			"progress": pct,
 			"status":   status,
 		})
 	}
 
 	// Step 1: Load template text
-	setStep := updateDB
-	setStep(5, constants.ContractDraftStatusGeneratingDesc, "正在读取模板文件...")
+	updateTask(5, constants.ContractDraftStatusGenerating)
 	var cf models.ContractFile
-	if err := database.DB.Where("id = ?", task.FileID).First(&cf).Error; err != nil {
-		failTask(task, "模板文件读取失败")
+	if err := database.DB.Where("id = ?", fileID).First(&cf).Error; err != nil {
+		failTaskDB(taskID, userID, "模板文件读取失败")
 		return
 	}
 
@@ -304,13 +242,12 @@ func runDraftAgent(task *draftTask) {
 		}
 	}
 	if templateText == "" {
-		failTask(task, "无法读取模板内容")
+		failTaskDB(taskID, userID, "无法读取模板内容")
 		return
 	}
-	task.TemplateText = templateText
 
 	// Step 2: Analyze template structure
-	setStep(15, constants.ContractDraftStatusGeneratingDesc, "正在分析模板结构...")
+	updateTask(15, constants.ContractDraftStatusGenerating)
 	analysisPrompt := fmt.Sprintf(`你是一个合同模板分析专家。请分析以下合同模板，提取其结构信息。
 
 合同模板内容：
@@ -326,13 +263,13 @@ func runDraftAgent(task *draftTask) {
 
 	analysisResult, err := llm.GenerateLlmWithPrompt("你是一个合同模板分析专家。请准确分析合同模板结构。", analysisPrompt)
 	if err != nil {
-		failTask(task, fmt.Sprintf("模板分析失败: %v", err))
+		failTaskDB(taskID, userID, fmt.Sprintf("模板分析失败: %v", err))
 		return
 	}
 	analysisResult = cleanJSON(analysisResult)
 
 	// Step 3: Understand requirements
-	setStep(35, constants.ContractDraftStatusGeneratingDesc, "正在理解用户需求...")
+	updateTask(35, constants.ContractDraftStatusGenerating)
 	reqPrompt := fmt.Sprintf(`你是一个合同需求分析专家。请将用户的自然语言需求转化为结构化参数，用于填充合同模板。
 
 用户需求：
@@ -342,17 +279,17 @@ func runDraftAgent(task *draftTask) {
 %s
 
 请输出JSON格式的结构化参数，包含合同双方信息、金额、付款条款、交付条款、特殊要求等。
-只输出JSON，不要其他文字。`, task.Requirements, analysisResult)
+只输出JSON，不要其他文字。`, requirements, analysisResult)
 
 	paramsResult, err := llm.GenerateLlmWithPrompt("你是一个合同需求分析专家。请准确提取合同参数。", reqPrompt)
 	if err != nil {
-		failTask(task, fmt.Sprintf("需求解析失败: %v", err))
+		failTaskDB(taskID, userID, fmt.Sprintf("需求解析失败: %v", err))
 		return
 	}
 	paramsResult = cleanJSON(paramsResult)
 
 	// Step 4: Generate draft
-	setStep(55, constants.ContractDraftStatusGeneratingDesc, "正在生成合同草案...")
+	updateTask(55, constants.ContractDraftStatusGenerating)
 	genPrompt := fmt.Sprintf(`你是一个合同起草专家。请根据以下信息生成一份完整的合同草案。
 
 模板原文：
@@ -371,16 +308,16 @@ func runDraftAgent(task *draftTask) {
 4. 对可通过 %s 的违约金条款附加风险提示
 5. 输出格式需保留清晰的章节和条款编号
 
-请直接输出完整的合同草案文本。`, templateText, task.Requirements, paramsResult, "超过30%")
+请直接输出完整的合同草案文本。`, templateText, requirements, paramsResult, "超过30%")
 
 	draftContent, err := llm.GenerateLlmWithPrompt("你是一个专业的合同起草专家，精通中国民法典及相关法律法规。", genPrompt)
 	if err != nil {
-		failTask(task, fmt.Sprintf("合同生成失败: %v", err))
+		failTaskDB(taskID, userID, fmt.Sprintf("合同生成失败: %v", err))
 		return
 	}
 
 	// Step 5: Generate change log
-	setStep(80, constants.ContractDraftStatusGeneratingDesc, "正在生成条款变更说明...")
+	updateTask(80, constants.ContractDraftStatusGenerating)
 	clPrompt := fmt.Sprintf(`你是一个合同变更分析专家。请对比原始模板和生成的草案，生成一份条款变更说明。
 
 模板原文：
@@ -413,18 +350,8 @@ func runDraftAgent(task *draftTask) {
 	}
 
 	generatedAt := time.Now()
-	draftTasksMu.Lock()
-	task.Status = constants.ContractDraftStatusCompleted
-	task.Progress = 100
-	task.CurrentStep = constants.ContractDraftStatusCompletedDesc
-	task.Content = draftContent
-	task.ChangeLog = changeLog
-	task.GeneratedAt = generatedAt.Format(constants.DateFormatTimeHHMMSS)
-	draftTasksMu.Unlock()
-
-	// Update DB record (already created in StartDraftGenerate)
-	userUUID, _ := uuid.Parse(task.UserID)
-	database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", task.ID, userUUID).Updates(map[string]interface{}{
+	userUUID, _ := uuid.Parse(userID)
+	database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", taskID, userUUID).Updates(map[string]interface{}{
 		"content":      draftContent,
 		"change_log":   changeLog,
 		"status":       constants.ContractDraftStatusCompleted,
@@ -432,24 +359,31 @@ func runDraftAgent(task *draftTask) {
 		"generated_at": generatedAt,
 	})
 
-	slog.Infof("[DraftAgent] Task %s completed: %d chars draft, %d chars changelog", task.ID, len(draftContent), len(changeLog))
+	slog.Infof("[DraftAgent] Task %s completed: %d chars draft, %d chars changelog", taskID, len(draftContent), len(changeLog))
 }
 
-func failTask(task *draftTask, errMsg string) {
-	draftTasksMu.Lock()
-	task.Status = constants.ContractDraftStatusFailed
-	task.Error = errMsg
-	task.Progress = 0
-	draftTasksMu.Unlock()
-
-	// Update DB
-	userUUID, _ := uuid.Parse(task.UserID)
-	database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", task.ID, userUUID).Updates(map[string]interface{}{
+func failTaskDB(taskID, userID, errMsg string) {
+	userUUID, _ := uuid.Parse(userID)
+	database.DB.Model(&models.ContractDraft{}).Where("id = ? AND user_id = ?", taskID, userUUID).Updates(map[string]interface{}{
 		"status":   constants.ContractDraftStatusFailed,
 		"progress": 0,
 	})
+	slog.Errorf("[DraftAgent] Task %s failed: %s", taskID, errMsg)
+}
 
-	slog.Errorf("[DraftAgent] Task %s failed: %s", task.ID, errMsg)
+func getCurrentStepDesc(status string) string {
+	switch status {
+	case constants.ContractDraftStatusPending:
+		return constants.ContractDraftStatusPendingDesc
+	case constants.ContractDraftStatusGenerating:
+		return constants.ContractDraftStatusGeneratingDesc
+	case constants.ContractDraftStatusCompleted:
+		return constants.ContractDraftStatusCompletedDesc
+	case constants.ContractDraftStatusFailed:
+		return constants.ContractDraftStatusFailedDesc
+	default:
+		return constants.ContractDraftStatusPendingDesc
+	}
 }
 
 func cleanJSON(s string) string {

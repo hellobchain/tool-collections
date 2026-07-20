@@ -372,8 +372,10 @@ func GetHistory(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "15"))
 	keyword := c.Query("keyword")
 	contractType := c.Query("contract_type")
-	startDate := c.Query("start_date")
-	endDate := c.Query("end_date")
+	reviewStartDateStart := c.Query("review_start_date_start")
+	reviewStartDateEnd := c.Query("review_start_date_end")
+	reviewEndDateStart := c.Query("review_end_date_start")
+	reviewEndDateEnd := c.Query("review_end_date_end")
 
 	if page < 1 {
 		page = 1
@@ -391,11 +393,17 @@ func GetHistory(c *gin.Context) {
 	if contractType != "" {
 		query = query.Where("contract_type = ?", contractType)
 	}
-	if startDate != "" {
-		query = query.Where("created_at >= ?", startDate)
+	if reviewStartDateStart != "" {
+		query = query.Where("review_start_time >= ?", reviewStartDateStart+" 00:00:00")
 	}
-	if endDate != "" {
-		query = query.Where("created_at <= ?", endDate+" 23:59:59")
+	if reviewStartDateEnd != "" {
+		query = query.Where("review_start_time <= ?", reviewStartDateEnd+" 23:59:59")
+	}
+	if reviewEndDateStart != "" {
+		query = query.Where("review_end_time >= ?", reviewEndDateStart+" 00:00:00")
+	}
+	if reviewEndDateEnd != "" {
+		query = query.Where("review_end_time <= ?", reviewEndDateEnd+" 23:59:59")
 	}
 
 	var total int64
@@ -1077,8 +1085,9 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 
 	for i, name := range ruleNames {
 		progress := int(math.Round(float64(i+1) / float64(totalRules) * 100))
+		// Prevent progress from exceeding 100%
 		if progress >= 100 {
-			progress = 99 // avoid 100%
+			progress = 99
 		}
 		database.DB.Model(review).Updates(map[string]interface{}{
 			"progress":     progress,

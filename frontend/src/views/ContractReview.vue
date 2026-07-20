@@ -439,7 +439,7 @@ export default {
           this.stopPolling()
           this.$store.commit('contract/SET_REVIEWING', false)
         }
-      }, 30000)
+      }, 10000)
     },
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }

@@ -210,7 +210,7 @@ export default {
         } catch {
           this.stopPolling()
         }
-      }, 10000)
+      }, 4000)
     },
     stopPolling() {
       if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null }

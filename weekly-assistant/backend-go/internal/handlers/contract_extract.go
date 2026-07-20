@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"sync"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
 
@@ -19,26 +18,6 @@ import (
 	"github.com/hellobchain/weekly-assistant/internal/models"
 	"github.com/hellobchain/weekly-assistant/internal/services"
 	"github.com/hellobchain/weekly-assistant/internal/utils"
-)
-
-type extractTask struct {
-	ID       string
-	UserID   string
-	Fields   []models.ExtractFieldConfig
-	Files    []fileInfo
-	Status   string
-	Progress int
-	Step     string
-}
-
-type fileInfo struct {
-	ID   string
-	Name string
-}
-
-var (
-	extractTasks   = make(map[string]*extractTask)
-	extractTasksMu sync.Mutex
 )
 
 func StartExtract(c *gin.Context) {
@@ -71,13 +50,13 @@ func StartExtract(c *gin.Context) {
 	}
 
 	userUUID, _ := uuid.Parse(userID)
-	fileIDsJSON, _ := json.Marshal(req.FileIDs)
+	fileIDs := make([]string, len(files))
 	fileNames := make([]string, len(files))
-	finfos := make([]fileInfo, len(files))
 	for i, f := range files {
+		fileIDs[i] = f.ID.String()
 		fileNames[i] = f.FileName
-		finfos[i] = fileInfo{ID: f.ID.String(), Name: f.FileName}
 	}
+	fileIDsJSON, _ := json.Marshal(fileIDs)
 	fileNamesJSON, _ := json.Marshal(fileNames)
 	fieldsJSON, _ := json.Marshal(req.Fields)
 
@@ -108,38 +87,13 @@ func StartExtract(c *gin.Context) {
 		})
 	}
 
-	taskID := task.ID.String()
-	et := &extractTask{
-		ID:     taskID,
-		UserID: userID,
-		Fields: req.Fields,
-		Files:  finfos,
-		Status: constants.ContractExtractStatusExtracting,
-	}
-	extractTasksMu.Lock()
-	extractTasks[taskID] = et
-	extractTasksMu.Unlock()
+	go runExtractAgent(task.ID)
 
-	go runExtractAgent(et, task.ID)
-
-	utils.Success(c, gin.H{"task_id": taskID})
+	utils.Success(c, gin.H{"task_id": task.ID.String()})
 }
 
 func GetExtractProgress(c *gin.Context) {
 	taskID := c.Param("taskId")
-
-	extractTasksMu.Lock()
-	et, ok := extractTasks[taskID]
-	extractTasksMu.Unlock()
-
-	if ok {
-		utils.Success(c, gin.H{
-			"percent": et.Progress,
-			"step":    et.Step,
-			"status":  et.Status,
-		})
-		return
-	}
 
 	var t models.ContractExtractTask
 	if err := database.DB.Where("id = ?", taskID).First(&t).Error; err != nil {
@@ -148,7 +102,7 @@ func GetExtractProgress(c *gin.Context) {
 	}
 	utils.Success(c, gin.H{
 		"percent": t.Progress,
-		"step":    "",
+		"step":    t.Status,
 		"status":  t.Status,
 	})
 }
@@ -345,27 +299,43 @@ func ExportExtractResult(c *gin.Context) {
 }
 
 // runExtractAgent runs LLM extraction for each file
-func runExtractAgent(et *extractTask, taskDBID uuid.UUID) {
+func runExtractAgent(taskID uuid.UUID) {
 	llm := services.NewLLMService()
-	updateDB := func(pct int, status, step string) {
-		et.Status = status
-		et.Progress = pct
-		et.Step = step
-		database.DB.Model(&models.ContractExtractTask{}).Where("id = ?", taskDBID).
+
+	var task models.ContractExtractTask
+	if err := database.DB.Where("id = ?", taskID).First(&task).Error; err != nil {
+		slog.Errorf("[ExtractAgent] Task %s not found: %v", taskID, err)
+		return
+	}
+
+	var fields []models.ExtractFieldConfig
+	json.Unmarshal([]byte(task.Fields), &fields)
+
+	var fileIDs []string
+	json.Unmarshal([]byte(task.FileIDs), &fileIDs)
+
+	fieldsJSON, _ := json.MarshalIndent(fields, "", "  ")
+
+	updateProgress := func(pct int, status string) {
+		// Prevent progress from exceeding 100%
+		if pct >= 100 {
+			pct = 99
+		}
+		database.DB.Model(&models.ContractExtractTask{}).Where("id = ?", taskID).
 			Updates(map[string]interface{}{"progress": pct, "status": status})
 	}
 
-	fieldsJSON, _ := json.MarshalIndent(et.Fields, "", "  ")
+	for idx := range fileIDs {
+		fileID := fileIDs[idx]
 
-	for idx, fi := range et.Files {
-		pct := (idx * 100) / len(et.Files)
-		updateDB(pct, constants.ContractExtractStatusExtracting, fmt.Sprintf("正在提取：%s", fi.Name))
+		pct := (idx * 100) / len(fileIDs)
+		updateProgress(pct, constants.ContractExtractStatusExtracting)
 
 		// Load file text
 		var cf models.ContractFile
-		if err := database.DB.Where("id = ?", fi.ID).First(&cf).Error; err != nil {
-			database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskDBID, fi.ID).
-				Updates(map[string]interface{}{"status": "失败", "error_msg": "文件不存在"})
+		if err := database.DB.Where("id = ?", fileID).First(&cf).Error; err != nil {
+			database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskID, fileID).
+				Updates(map[string]interface{}{"status": constants.ContractExtractStatusFailed, "error_msg": "文件不存在"})
 			continue
 		}
 
@@ -377,8 +347,8 @@ func runExtractAgent(et *extractTask, taskDBID uuid.UUID) {
 			}
 		}
 		if docText == "" {
-			database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskDBID, fi.ID).
-				Updates(map[string]interface{}{"status": "失败", "error_msg": "无法读取文档内容"})
+			database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskID, fileID).
+				Updates(map[string]interface{}{"status": constants.ContractExtractStatusFailed, "error_msg": "无法读取文档内容"})
 			continue
 		}
 
@@ -429,7 +399,7 @@ func runExtractAgent(et *extractTask, taskDBID uuid.UUID) {
 			resultData = "{}"
 		}
 
-		database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskDBID, fi.ID).
+		database.DB.Model(&models.ContractExtractResult{}).Where("task_id = ? AND file_id = ?", taskID, fileID).
 			Updates(map[string]interface{}{
 				"results":   resultData,
 				"status":    status,
@@ -437,8 +407,8 @@ func runExtractAgent(et *extractTask, taskDBID uuid.UUID) {
 			})
 	}
 
-	updateDB(100, constants.ContractExtractStatusCompleted, "提取完成")
-	database.DB.Model(&models.ContractExtractTask{}).Where("id = ?", taskDBID).
-		Update("done_files", len(et.Files))
-	log.Printf("[ExtractAgent] Task %s completed: %d files", taskDBID, len(et.Files))
+	updateProgress(100, constants.ContractExtractStatusCompleted)
+	database.DB.Model(&models.ContractExtractTask{}).Where("id = ?", taskID).
+		Update("done_files", len(fileIDs))
+	log.Printf("[ExtractAgent] Task %s completed: %d files", taskID, len(fileIDs))
 }
