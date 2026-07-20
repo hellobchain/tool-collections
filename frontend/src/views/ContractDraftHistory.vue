@@ -4,14 +4,26 @@
       <h2>📂 我的起草</h2>
     </div>
 
+    <el-card class="filter-card">
+      <div class="filter-bar">
+        <el-input v-model="searchText" placeholder="搜索模板名称..." size="small" style="width:220px" prefix-icon="el-icon-search" clearable @clear="handleSearch" />
+        <el-date-picker v-model="dateRange" type="daterange" range-separator="~" start-placeholder="生成开始" end-placeholder="生成结束" size="small" value-format="yyyy-MM-dd" style="width:260px" @change="handleSearch" />
+        <el-button type="primary" size="small" icon="el-icon-search" @click="handleSearch">搜索</el-button>
+      </div>
+    </el-card>
+
     <el-card class="list-card">
       <el-table :data="list" v-loading="loading" stripe style="width:100%">
         <el-table-column prop="file_name" label="模板名称" min-width="180">
           <template slot-scope="{ row }">
-            <el-button type="text" @click="viewDetail(row)">{{ row.file_name }}</el-button>
+            <EllipsisCell :content="row.file_name" maxWidth="180px" />
           </template>
         </el-table-column>
-        <el-table-column prop="requirements" label="需求摘要" min-width="250" show-overflow-tooltip />
+        <el-table-column prop="requirements" label="需求摘要" min-width="250">
+          <template slot-scope="{ row }">
+            <EllipsisCell :content="row.requirements" maxWidth="250px" popoverWidth="500" />
+          </template>
+        </el-table-column>
         <el-table-column prop="generated_at" label="生成时间" width="160" />
         <el-table-column prop="content_len" label="草案字数" width="100">
           <template slot-scope="{ row }">{{ row.content_len }}字</template>
@@ -90,6 +102,9 @@ import * as contractApi from '@/api/contract'
 
 export default {
   name: 'ContractDraftHistory',
+  components: {
+    EllipsisCell: () => import('@/components/EllipsisCell')
+  },
   data() {
     return {
       list: [],
@@ -98,7 +113,9 @@ export default {
       pageSize: 15,
       loading: false,
       detailVisible: false,
-      detail: null
+      detail: null,
+      searchText: '',
+      dateRange: null
     }
   },
   created() {
@@ -112,13 +129,23 @@ export default {
     async fetchList() {
       this.loading = true
       try {
-        const res = await contractApi.getDraftHistory({ page: this.page, page_size: this.pageSize } )
+        const params = { page: this.page, page_size: this.pageSize }
+        if (this.searchText) params.keyword = this.searchText
+        if (this.dateRange && this.dateRange.length === 2) {
+          params.date_from = this.dateRange[0]
+          params.date_to = this.dateRange[1]
+        }
+        const res = await contractApi.getDraftHistory(params)
         const data = res.data.data || res.data
         this.list = data.list || []
         this.total = data.total || 0
       } catch {} finally {
         this.loading = false
       }
+    },
+    handleSearch() {
+      this.page = 1
+      this.fetchList()
     },
     handlePageChange(val) {
       this.page = val
@@ -150,6 +177,8 @@ export default {
 .draft-history { height: 100%; display: flex; flex-direction: column; overflow: auto; }
 .page-header { background: #fff; padding: 8px 20px; border-bottom: 1px solid #e4e7ed; flex-shrink: 0; }
 .page-header h2 { font-size: 16px; margin: 0; color: #333; }
+.filter-card { margin: 0; border-top: none; border-radius: 0; }
+.filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 16px; }
 .list-card { margin: 0; border-top: none; border-radius: 0; flex: 1; overflow: auto; }
 .pagination-wrap { display: flex; justify-content: flex-end; padding: 8px 16px; }
 .dialog-body { padding: 0 16px; }

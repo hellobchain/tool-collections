@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
 
@@ -200,12 +201,26 @@ func GetExtractHistory(c *gin.Context) {
 		pageSize = 15
 	}
 
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	dateFrom := strings.TrimSpace(c.Query("date_from"))
+	dateTo := strings.TrimSpace(c.Query("date_to"))
+
+	query := database.DB.Where("user_id = ?", userUUID)
+	if keyword != "" {
+		query = query.Where("task_name ILIKE ?", "%"+keyword+"%")
+	}
+	if dateFrom != "" {
+		query = query.Where("created_at >= ?", dateFrom)
+	}
+	if dateTo != "" {
+		query = query.Where("created_at < ?", dateTo+" 23:59:59")
+	}
+
 	var total int64
-	database.DB.Model(&models.ContractExtractTask{}).Where("user_id = ?", userUUID).Count(&total)
+	query.Model(&models.ContractExtractTask{}).Count(&total)
 
 	var tasks []models.ContractExtractTask
-	database.DB.Where("user_id = ?", userUUID).
-		Order("created_at DESC").
+	query.Order("created_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&tasks)

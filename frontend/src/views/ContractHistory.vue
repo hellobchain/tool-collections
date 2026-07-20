@@ -20,7 +20,7 @@
       <el-table :data="historyList" v-loading="historyLoading" stripe style="width:100%">
         <el-table-column prop="file_name" label="合同名称" min-width="200">
           <template slot-scope="{ row }">
-            <el-button type="text" @click="viewReport(row)">{{ row.file_name || row.name }}</el-button>
+            <EllipsisCell :content="row.file_name || row.name" maxWidth="200px" />
           </template>
         </el-table-column>
         <el-table-column prop="contract_type_label" label="合同类型" width="100" />
@@ -141,6 +141,9 @@ import { mapState } from 'vuex'
 
 export default {
   name: 'ContractHistory',
+  components: {
+    EllipsisCell: () => import('@/components/EllipsisCell')
+  },
   data() {
     return {
       page: 1,

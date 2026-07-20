@@ -139,12 +139,26 @@ func GetDraftHistory(c *gin.Context) {
 		pageSize = 15
 	}
 
+	keyword := strings.TrimSpace(c.Query("keyword"))
+	dateFrom := strings.TrimSpace(c.Query("date_from"))
+	dateTo := strings.TrimSpace(c.Query("date_to"))
+
+	query := database.DB.Where("user_id = ?", userUUID)
+	if keyword != "" {
+		query = query.Where("file_name ILIKE ?", "%"+keyword+"%")
+	}
+	if dateFrom != "" {
+		query = query.Where("generated_at >= ?", dateFrom)
+	}
+	if dateTo != "" {
+		query = query.Where("generated_at < ?", dateTo+" 23:59:59")
+	}
+
 	var total int64
-	database.DB.Model(&models.ContractDraft{}).Where("user_id = ?", userUUID).Count(&total)
+	query.Model(&models.ContractDraft{}).Count(&total)
 
 	var drafts []models.ContractDraft
-	database.DB.Where("user_id = ?", userUUID).
-		Order("created_at DESC").
+	query.Order("created_at DESC").
 		Offset((page - 1) * pageSize).
 		Limit(pageSize).
 		Find(&drafts)
