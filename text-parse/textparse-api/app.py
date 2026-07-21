@@ -7,11 +7,11 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import ValidationError
-from app.config import HOST, PORT, API_KEY_HEADER, ENABLE_AUTH, API_KEY
+from config import HOST, PORT, API_KEY_HEADER, ENABLE_AUTH, API_KEY
 
-from app.converter import DoclingConverter
-from app.utils import disposition_filename
-from app.models import ApiResponse, ErrorCode
+from converter import DoclingConverter
+from utils import disposition_filename
+from models import ApiResponse, ErrorCode
 
 # 初始化应用
 app = FastAPI(

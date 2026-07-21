@@ -1,5 +1,4 @@
 import os
-from pathlib import Path
 
 # 服务配置
 HOST = os.getenv("HOST", "0.0.0.0")

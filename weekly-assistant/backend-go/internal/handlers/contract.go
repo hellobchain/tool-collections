@@ -512,14 +512,29 @@ func extractText(filename string, data []byte) (string, error) {
 	case ".txt":
 		return string(data), nil
 	case ".docx":
-		// return extractDocxText(data)
-		return services.DocConvertText(data, filename)
+		docxText, err := services.DocConvertText(data, filename)
+		if err != nil {
+			// Fallback: use local DOCX text extraction if the service fails
+			slog.Warnf("Failed to convert docx file: %v", err)
+			return extractDocxText(data), nil
+		}
+		return docxText, nil
 	case ".doc":
-		// return extractDocText(data)
-		return services.DocConvertText(data, filename)
+		docText, err := services.DocConvertText(data, filename)
+		if err != nil {
+			// Fallback: use local DOC text extraction if the service fails
+			slog.Warnf("Failed to convert doc file: %v", err)
+			return extractDocText(data), nil
+		}
+		return docText, nil
 	case ".pdf":
-		// return extractPDFText(data)
-		return services.DocConvertText(data, filename)
+		pdfText, err := services.DocConvertText(data, filename)
+		if err != nil {
+			// Fallback: use local PDF text extraction if the service fails
+			slog.Warnf("Failed to convert pdf file: %v", err)
+			return extractPDFText(data), nil
+		}
+		return pdfText, nil
 	default:
 		return string(data), nil
 	}
