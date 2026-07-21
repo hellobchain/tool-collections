@@ -18,6 +18,7 @@
             :on-change="handleFileChange"
             :on-remove="handleFileRemove"
             :file-list="fileList"
+            :accept="'.doc,.docx,.pdf,.png,.jpg,.jpeg'"
           >
             <i class="el-icon-upload"></i>
             <div class="el-upload__text">将文件拖到此处，或<em>点击选择</em></div>
