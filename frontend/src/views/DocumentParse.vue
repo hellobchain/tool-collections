@@ -350,8 +350,6 @@ export default {
       try {
         const res = await jsonCompare(this.jsonA, this.jsonB)
         this.compareResult = res.data.data || res.data
-      } catch (err) {
-        this.$message.error(err.response?.data?.msg || err.message || '比对失败')
       } finally {
         this.comparing = false
       }

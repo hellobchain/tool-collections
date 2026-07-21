@@ -231,9 +231,7 @@ export default {
         this.$message.success('保存成功')
         this.showView = false
         this.loadTemplates()
-      } catch {
-        this.$message.error('保存失败')
-      }
+      } catch {}
     },
     async createTemplate() {
       const c = this.createData
@@ -251,9 +249,7 @@ export default {
         this.showCreate = false
         this.createData = { name: '', system_prompt: '', user_prompt_template: '', description: '', prompt_type: 'weekly' }
         this.loadTemplates()
-      } catch {
-        this.$message.error('创建失败')
-      }
+      } catch {}
     },
     async deleteTemplate(id) {
       await this.$confirm('确定删除这个自定义模板吗？', '提示', { type: 'warning' })
@@ -261,9 +257,7 @@ export default {
         await promptAPI.deleteTemplate(id)
         this.$message.success('删除成功')
         this.loadTemplates()
-      } catch {
-        this.$message.error('删除失败')
-      }
+      } catch { }
     },
     handleClose() {
       this.$emit('update:visible', false)

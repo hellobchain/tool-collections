@@ -204,7 +204,6 @@ export default {
         this.detailReport = res.data.data || res.data
         this.detailVisible = true
       } catch {
-        this.$message.error('获取报告详情失败')
       }
     },
     async handleExport(row, format) {
