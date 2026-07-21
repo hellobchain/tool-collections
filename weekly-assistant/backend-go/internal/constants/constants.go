@@ -107,6 +107,20 @@ const (
 	DateFormatTimeHHMMSS = "2006-01-02 15:04:05"
 )
 
+// 合同比对
+const (
+	JsonCompareTypeAdded   = "added"
+	JsonCompareTypeRemoved = "removed"
+	JsonCompareTypeChanged = "changed"
+)
+
+// 提示词类型
+const (
+	PromptTypeWeekly  = "weekly"  // 周报
+	PromptTypeQuarter = "quarter" // 季度
+	PromptTypeYearly  = "year"    // 年度
+)
+
 // ============ LLM ============
 const (
 	LLMTemperature     = 0.3

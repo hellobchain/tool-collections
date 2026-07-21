@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/gin-gonic/gin"
+	"github.com/hellobchain/weekly-assistant/internal/constants"
 	"github.com/hellobchain/weekly-assistant/internal/models"
 	"github.com/hellobchain/weekly-assistant/internal/utils"
 )
@@ -51,11 +52,11 @@ func compare(path string, a, b interface{}, diffs *[]models.DiffItem) {
 	}
 
 	if a == nil && b != nil {
-		*diffs = append(*diffs, models.DiffItem{Path: path, Type: "added", NewValue: b})
+		*diffs = append(*diffs, models.DiffItem{Path: path, Type: constants.JsonCompareTypeAdded, NewValue: b})
 		return
 	}
 	if a != nil && b == nil {
-		*diffs = append(*diffs, models.DiffItem{Path: path, Type: "removed", OldValue: a})
+		*diffs = append(*diffs, models.DiffItem{Path: path, Type: constants.JsonCompareTypeRemoved, OldValue: a})
 		return
 	}
 
@@ -79,9 +80,9 @@ func compare(path string, a, b interface{}, diffs *[]models.DiffItem) {
 			va, aHas := am[k]
 			vb, bHas := bm[k]
 			if aHas && !bHas {
-				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: "removed", OldValue: va})
+				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: constants.JsonCompareTypeRemoved, OldValue: va})
 			} else if !aHas && bHas {
-				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: "added", NewValue: vb})
+				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: constants.JsonCompareTypeAdded, NewValue: vb})
 			} else {
 				compare(childPath, va, vb, diffs)
 			}
@@ -99,9 +100,9 @@ func compare(path string, a, b interface{}, diffs *[]models.DiffItem) {
 		for i := 0; i < maxLen; i++ {
 			childPath := fmt.Sprintf("%s[%d]", path, i)
 			if i >= len(al) {
-				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: "added", NewValue: bl[i]})
+				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: constants.JsonCompareTypeAdded, NewValue: bl[i]})
 			} else if i >= len(bl) {
-				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: "removed", OldValue: al[i]})
+				*diffs = append(*diffs, models.DiffItem{Path: childPath, Type: constants.JsonCompareTypeRemoved, OldValue: al[i]})
 			} else {
 				compare(childPath, al[i], bl[i], diffs)
 			}
@@ -109,5 +110,5 @@ func compare(path string, a, b interface{}, diffs *[]models.DiffItem) {
 		return
 	}
 
-	*diffs = append(*diffs, models.DiffItem{Path: path, Type: "changed", OldValue: a, NewValue: b})
+	*diffs = append(*diffs, models.DiffItem{Path: path, Type: constants.JsonCompareTypeChanged, OldValue: a, NewValue: b})
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
+	"github.com/hellobchain/weekly-assistant/internal/constants"
 	"github.com/hellobchain/weekly-assistant/internal/database"
 	"github.com/hellobchain/weekly-assistant/internal/middleware"
 	"github.com/hellobchain/weekly-assistant/internal/models"
@@ -102,7 +103,7 @@ func CreatePromptTemplate(c *gin.Context) {
 
 	promptType := req.PromptType
 	if promptType == "" {
-		promptType = "weekly"
+		promptType = constants.PromptTypeWeekly
 	}
 
 	template := models.PromptTemplate{
