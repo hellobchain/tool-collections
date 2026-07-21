@@ -45,7 +45,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{"user_id": user.ID.String()})
+	utils.Success(c, models.RegisterResponse{UserID: user.ID.String()})
 }
 
 func Login(c *gin.Context) {
@@ -78,14 +78,14 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"token":         token,
-		"refresh_token": refreshToken,
-		"user": gin.H{
-			"id":        user.ID.String(),
-			"username":  user.Username,
-			"full_name": user.FullName,
-			"email":     user.Email,
+	utils.Success(c, models.LoginResponse{
+		Token:        token,
+		RefreshToken: refreshToken,
+		User: models.LoginUserInfo{
+			ID:       user.ID.String(),
+			Username: user.Username,
+			FullName: user.FullName,
+			Email:    user.Email,
 		},
 	})
 }
@@ -148,7 +148,7 @@ func RefreshToken(c *gin.Context) {
 		utils.ErrorWithMsg(c, utils.CodeServerError, "生成 refresh token 失败")
 		return
 	}
-	utils.Success(c, models.TokenResponse{
+	utils.Success(c, models.RefreshTokenResponse{
 		Token:        token,
 		RefreshToken: newRefresh,
 	})

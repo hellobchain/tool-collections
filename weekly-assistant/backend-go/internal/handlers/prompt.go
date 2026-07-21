@@ -122,7 +122,7 @@ func CreatePromptTemplate(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessWithMsg(c, gin.H{"id": template.ID.String()}, "创建成功")
+	utils.SuccessWithMsg(c, models.PromptCreateResponse{ID: template.ID.String()}, "创建成功")
 }
 
 func UpdatePromptTemplate(c *gin.Context) {

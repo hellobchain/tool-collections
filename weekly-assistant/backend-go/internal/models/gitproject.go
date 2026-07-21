@@ -26,7 +26,7 @@ func (p *GitProject) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
-type GitProjectRequest struct {
+type GitProjectReq struct {
 	ProjectID   string `json:"project_id" binding:"required"`
 	ProjectName string `json:"project_name" binding:"required"`
 	BaseURL     string `json:"base_url" binding:"required"`
@@ -34,7 +34,7 @@ type GitProjectRequest struct {
 	Branch      string `json:"branch"`
 }
 
-type GitProjectResponse struct {
+type GitProjectResp struct {
 	ID          string `json:"id"`
 	ProjectID   string `json:"project_id"`
 	ProjectName string `json:"project_name"`

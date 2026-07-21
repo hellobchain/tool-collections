@@ -33,11 +33,11 @@ func GitLabCommits(c *gin.Context) {
 		commits[i]["project_name"] = projectName
 	}
 
-	utils.Success(c, gin.H{
-		"project_id":   req.ProjectID,
-		"project_name": projectName,
-		"start_date":   req.StartDate,
-		"end_date":     req.EndDate,
-		"commits":      commits,
+	utils.Success(c, models.GitlabCommitResponse{
+		ProjectID:   req.ProjectID,
+		ProjectName: projectName,
+		StartDate:   req.StartDate,
+		EndDate:     req.EndDate,
+		Commits:     commits,
 	})
 }

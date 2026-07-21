@@ -90,7 +90,7 @@ func StartExtract(c *gin.Context) {
 
 	go runExtractAgent(task.ID)
 
-	utils.Success(c, gin.H{"task_id": task.ID.String()})
+	utils.Success(c, models.ExtractStartResponse{TaskID: task.ID.String()})
 }
 
 func GetExtractProgress(c *gin.Context) {
@@ -101,10 +101,10 @@ func GetExtractProgress(c *gin.Context) {
 		utils.ErrorWithMsg(c, utils.CodeNotFound, "任务不存在")
 		return
 	}
-	utils.Success(c, gin.H{
-		"percent": t.Progress,
-		"step":    t.Status,
-		"status":  t.Status,
+	utils.Success(c, models.ExtractProgressResponse{
+		Percent: t.Progress,
+		Step:    t.Status,
+		Status:  t.Status,
 	})
 }
 
@@ -125,27 +125,27 @@ func GetExtractResult(c *gin.Context) {
 	var results []models.ContractExtractResult
 	database.DB.Where("task_id = ?", task.ID).Find(&results)
 
-	resultList := make([]gin.H, 0)
+	resultList := make([]models.ExtractResultItem, 0)
 	for _, r := range results {
 		var data map[string]interface{}
 		json.Unmarshal([]byte(r.Results), &data)
-		resultList = append(resultList, gin.H{
-			"id":        r.ID.String(),
-			"file_id":   r.FileID,
-			"file_name": r.FileName,
-			"data":      data,
-			"status":    r.Status,
-			"error_msg": r.ErrorMsg,
+		resultList = append(resultList, models.ExtractResultItem{
+			ID:       r.ID.String(),
+			FileID:   r.FileID,
+			FileName: r.FileName,
+			Data:     data,
+			Status:   r.Status,
+			ErrorMsg: r.ErrorMsg,
 		})
 	}
 
-	utils.Success(c, gin.H{
-		"task_id":   task.ID.String(),
-		"task_name": task.TaskName,
-		"fields":    fields,
-		"results":   resultList,
-		"status":    task.Status,
-		"progress":  task.Progress,
+	utils.Success(c, models.ExtractResultResponse{
+		TaskID:   task.ID.String(),
+		TaskName: task.TaskName,
+		Fields:   fields,
+		Results:  resultList,
+		Status:   task.Status,
+		Progress: task.Progress,
 	})
 }
 
@@ -225,20 +225,20 @@ func GetExtractHistory(c *gin.Context) {
 		Limit(pageSize).
 		Find(&tasks)
 
-	list := make([]gin.H, 0)
+	list := make([]models.ExtractHistoryItem, 0)
 	for _, t := range tasks {
 		var fileNames []string
 		json.Unmarshal([]byte(t.FileNames), &fileNames)
 		var fields []models.ExtractFieldConfig
 		json.Unmarshal([]byte(t.Fields), &fields)
-		list = append(list, gin.H{
-			"id":          t.ID.String(),
-			"task_name":   t.TaskName,
-			"file_count":  len(fileNames),
-			"field_count": len(fields),
-			"status":      t.Status,
-			"progress":    t.Progress,
-			"created_at":  t.CreatedAt.Format(constants.DateFormatTimeHHMMSS),
+		list = append(list, models.ExtractHistoryItem{
+			ID:         t.ID.String(),
+			TaskName:   t.TaskName,
+			FileCount:  len(fileNames),
+			FieldCount: len(fields),
+			Status:     t.Status,
+			Progress:   t.Progress,
+			CreatedAt:  t.CreatedAt.Format(constants.DateFormatTimeHHMMSS),
 		})
 	}
 	utils.SuccessPage(c, list, total, page, pageSize)

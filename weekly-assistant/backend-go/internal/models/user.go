@@ -8,8 +8,8 @@ import (
 
 type User struct {
 	BaseModel
-	Username     string    `gorm:"uniqueIndex;not null"`
-	PasswordHash string    `gorm:"not null"`
+	Username     string `gorm:"uniqueIndex;not null"`
+	PasswordHash string `gorm:"not null"`
 	Email        string
 	FullName     string
 	CreatedAt    time.Time
@@ -47,7 +47,7 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
-type TokenResponse struct {
+type RefreshTokenResponse struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
 }

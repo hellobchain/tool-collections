@@ -60,7 +60,7 @@ func StartDraftGenerate(c *gin.Context) {
 
 	go runDraftAgent(draftRecord.ID.String(), userID, req.FileID, req.Requirements)
 
-	utils.Success(c, gin.H{"task_id": draftRecord.ID.String()})
+	utils.Success(c, models.DraftGenerateResponse{TaskID: draftRecord.ID.String()})
 }
 
 func GetDraftProgress(c *gin.Context) {
@@ -72,10 +72,10 @@ func GetDraftProgress(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"percent":      d.Progress,
-		"current_step": getCurrentStepDesc(d.Status),
-		"status":       d.Status,
+	utils.Success(c, models.DraftProgressResponse{
+		Percent:     d.Progress,
+		CurrentStep: getCurrentStepDesc(d.Status),
+		Status:      d.Status,
 	})
 }
 
@@ -92,12 +92,12 @@ func GetDraftResult(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"id":           d.ID.String(),
-		"content":      d.Content,
-		"change_log":   d.ChangeLog,
-		"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
-		"file_name":    d.FileName,
+	utils.Success(c, models.DraftResultResponse{
+		ID:          d.ID.String(),
+		Content:     d.Content,
+		ChangeLog:   d.ChangeLog,
+		GeneratedAt: d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
+		FileName:    d.FileName,
 	})
 }
 
@@ -163,16 +163,16 @@ func GetDraftHistory(c *gin.Context) {
 		Limit(pageSize).
 		Find(&drafts)
 
-	list := make([]gin.H, 0)
+	list := make([]models.DraftHistoryItem, 0)
 	for _, d := range drafts {
-		list = append(list, gin.H{
-			"id":           d.ID.String(),
-			"file_name":    d.FileName,
-			"requirements": truncateText(d.Requirements, 100),
-			"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
-			"content_len":  len(d.Content),
-			"status":       d.Status,
-			"progress":     d.Progress,
+		list = append(list, models.DraftHistoryItem{
+			ID:           d.ID.String(),
+			FileName:     d.FileName,
+			Requirements: truncateText(d.Requirements, 100),
+			GeneratedAt:  d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
+			ContentLen:   len(d.Content),
+			Status:       d.Status,
+			Progress:     d.Progress,
 		})
 	}
 
@@ -190,15 +190,15 @@ func GetDraftDetail(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"id":           d.ID.String(),
-		"file_name":    d.FileName,
-		"requirements": d.Requirements,
-		"content":      d.Content,
-		"change_log":   d.ChangeLog,
-		"generated_at": d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
-		"status":       d.Status,
-		"progress":     d.Progress,
+	utils.Success(c, models.DraftDetailResponse{
+		ID:           d.ID.String(),
+		FileName:     d.FileName,
+		Requirements: d.Requirements,
+		Content:      d.Content,
+		ChangeLog:    d.ChangeLog,
+		GeneratedAt:  d.GeneratedAt.Format(constants.DateFormatTimeHHMMSS),
+		Status:       d.Status,
+		Progress:     d.Progress,
 	})
 }
 

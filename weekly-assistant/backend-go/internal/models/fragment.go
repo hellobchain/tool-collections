@@ -35,14 +35,6 @@ type ListFragmentsQuery struct {
 	PageSize  int    `json:"page_size" form:"page_size"`
 }
 
-type FragmentResponse struct {
-	ID         string     `json:"id"`
-	Content    string     `json:"content"`
-	Date       string     `json:"date"`
-	OccurredAt *time.Time `json:"occurred_at"`
-	IsCarried  bool       `json:"is_carried"`
-}
-
 type CarryoverResponse struct {
 	ID       string `json:"id"`
 	Content  string `json:"content"`

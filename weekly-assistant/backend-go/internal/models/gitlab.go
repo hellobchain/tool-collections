@@ -20,10 +20,10 @@ type GitLabCommit struct {
 }
 
 type GitlabCommitRaw struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Message     string `json:"message"`
+	ID           string `json:"id"`
+	Title        string `json:"title"`
+	Message      string `json:"message"`
 	AuthoredDate string `json:"authored_date"`
-	WebURL      string `json:"web_url"`
-	AuthorEmail string `json:"author_email"`
+	WebURL       string `json:"web_url"`
+	AuthorEmail  string `json:"author_email"`
 }

@@ -178,11 +178,15 @@ func GetWeekStatus(c *gin.Context) {
 		if f.OccurredAt != nil {
 			dateStr = services.FormatDate(*f.OccurredAt)
 		}
+		occurredAt := ""
+		if f.OccurredAt != nil {
+			occurredAt = f.OccurredAt.Format(constants.DateFormatTimeHHMMSS)
+		}
 		fragResponses[i] = models.FragmentResponse{
 			ID:         f.ID.String(),
 			Content:    f.Content,
 			Date:       dateStr,
-			OccurredAt: f.OccurredAt,
+			OccurredAt: occurredAt,
 			IsCarried:  f.IsCarried,
 		}
 	}
@@ -271,9 +275,9 @@ func GenerateDraft(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"content":    draft,
-		"week_start": services.FormatDate(ctx.weekStart),
+	utils.Success(c, models.DraftResponse{
+		Content:   draft,
+		WeekStart: services.FormatDate(ctx.weekStart),
 	})
 }
 

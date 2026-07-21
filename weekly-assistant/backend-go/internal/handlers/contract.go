@@ -89,12 +89,12 @@ func UploadContract(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"id":        cf.ID.String(),
-		"name":      cf.FileName,
-		"size":      formatFileSize(cf.FileSize),
-		"status":    cf.Status,
-		"file_uuid": cf.FileUUID,
+	utils.Success(c, models.ContractUploadResponse{
+		ID:       cf.ID.String(),
+		Name:     cf.FileName,
+		Size:     formatFileSize(cf.FileSize),
+		Status:   cf.Status,
+		FileUUID: cf.FileUUID,
 	})
 }
 
@@ -241,9 +241,9 @@ func StartReview(c *gin.Context) {
 
 	go runReviewEngine(&review, files, req.Position, req.ContractType, ruleNames)
 
-	utils.Success(c, gin.H{
-		"task_id":   review.ID.String(),
-		"report_id": review.ID.String(),
+	utils.Success(c, models.ReviewStartResponse{
+		TaskID:   review.ID.String(),
+		ReportID: review.ID.String(),
 	})
 }
 
@@ -259,13 +259,13 @@ func GetReviewProgress(c *gin.Context) {
 		return
 	}
 
-	utils.Success(c, gin.H{
-		"percent":      review.Progress,
-		"current_rule": review.CurrentRule,
-		"high_risk":    review.HighRisk,
-		"medium_risk":  review.MediumRisk,
-		"low_risk":     review.LowRisk,
-		"status":       review.Status,
+	utils.Success(c, models.ReviewProgressResponse{
+		Percent:     review.Progress,
+		CurrentRule: review.CurrentRule,
+		HighRisk:    review.HighRisk,
+		MediumRisk:  review.MediumRisk,
+		LowRisk:     review.LowRisk,
+		Status:      review.Status,
 	})
 }
 
@@ -284,44 +284,44 @@ func GetReviewReport(c *gin.Context) {
 	var items []models.ContractReviewItem
 	database.DB.Where("review_id = ?", review.ID).Order("sort_order ASC").Find(&items)
 
-	itemList := make([]gin.H, 0)
+	itemList := make([]models.ReviewItem, 0)
 	for _, item := range items {
-		itemList = append(itemList, gin.H{
-			"id":            item.ID.String(),
-			"level":         item.Level,
-			"section":       item.Section,
-			"rule_name":     item.RuleName,
-			"description":   item.Description,
-			"suggestion":    item.Suggestion,
-			"law_ref":       item.LawRef,
-			"original_text": item.OriginalText,
-			"status":        item.Status,
-			"comment":       item.Comment,
+		itemList = append(itemList, models.ReviewItem{
+			ID:           item.ID.String(),
+			Level:        item.Level,
+			Section:      item.Section,
+			RuleName:     item.RuleName,
+			Description:  item.Description,
+			Suggestion:   item.Suggestion,
+			LawRef:       item.LawRef,
+			OriginalText: item.OriginalText,
+			Status:       item.Status,
+			Comment:      item.Comment,
 		})
 	}
 
-	riskStats := gin.H{
-		"high":   review.HighRisk,
-		"medium": review.MediumRisk,
-		"low":    review.LowRisk,
+	riskStats := models.RiskStats{
+		High:   review.HighRisk,
+		Medium: review.MediumRisk,
+		Low:    review.LowRisk,
 	}
 
-	utils.Success(c, gin.H{
-		"id":                  review.ID.String(),
-		"file_name":           review.FileName,
-		"contract_type":       review.ContractType,
-		"contract_type_label": review.ContractTypeLabel,
-		"position":            review.Position,
-		"position_label":      review.PositionLabel,
-		"standards_label":     review.StandardsLabel,
-		"status":              review.Status,
-		"conclusion":          review.Conclusion,
-		"total_rules":         review.TotalRules,
-		"risk_stats":          riskStats,
-		"review_start_time":   review.ReviewStartTime,
-		"review_end_time":     review.ReviewEndTime,
-		"reviewer":            review.Reviewer,
-		"items":               itemList,
+	utils.Success(c, models.ReviewReportResponse{
+		ID:                review.ID.String(),
+		FileName:          review.FileName,
+		ContractType:      review.ContractType,
+		ContractTypeLabel: review.ContractTypeLabel,
+		Position:          review.Position,
+		PositionLabel:     review.PositionLabel,
+		StandardsLabel:    review.StandardsLabel,
+		Status:            review.Status,
+		Conclusion:        review.Conclusion,
+		TotalRules:        review.TotalRules,
+		RiskStats:         riskStats,
+		ReviewStartTime:   review.ReviewStartTime,
+		ReviewEndTime:     review.ReviewEndTime,
+		Reviewer:          review.Reviewer,
+		Items:             itemList,
 	})
 }
 
@@ -420,26 +420,26 @@ func GetHistory(c *gin.Context) {
 		Limit(pageSize).
 		Find(&reviews)
 
-	list := make([]gin.H, 0)
+	list := make([]models.ReviewHistoryItem, 0)
 	for _, r := range reviews {
-		riskStats := gin.H{
-			"high":   r.HighRisk,
-			"medium": r.MediumRisk,
-			"low":    r.LowRisk,
+		riskStats := models.RiskStats{
+			High:   r.HighRisk,
+			Medium: r.MediumRisk,
+			Low:    r.LowRisk,
 		}
-		list = append(list, gin.H{
-			"id":                  r.ID.String(),
-			"file_name":           r.FileName,
-			"contract_type":       r.ContractType,
-			"contract_type_label": r.ContractTypeLabel,
-			"reviewer":            r.Reviewer,
-			"review_start_time":   r.ReviewStartTime,
-			"review_end_time":     r.ReviewEndTime,
-			"risk_stats":          riskStats,
-			"total_risks":         r.HighRisk + r.MediumRisk + r.LowRisk,
-			"conclusion":          r.Conclusion,
-			"status":              r.Status,
-			"progress":            r.Progress,
+		list = append(list, models.ReviewHistoryItem{
+			ID:                r.ID.String(),
+			FileName:          r.FileName,
+			ContractType:      r.ContractType,
+			ContractTypeLabel: r.ContractTypeLabel,
+			Reviewer:          r.Reviewer,
+			ReviewStartTime:   r.ReviewStartTime,
+			ReviewEndTime:     r.ReviewEndTime,
+			RiskStats:         riskStats,
+			TotalRisks:        r.HighRisk + r.MediumRisk + r.LowRisk,
+			Conclusion:        r.Conclusion,
+			Status:            r.Status,
+			Progress:          r.Progress,
 		})
 	}
 

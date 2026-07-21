@@ -40,9 +40,9 @@ func ListGitProjects(c *gin.Context) {
 		slog.Errorf("查询项目列表失败: %v", err)
 	}
 
-	items := []models.GitProjectResponse{}
+	items := []models.GitProjectResp{}
 	for _, p := range projects {
-		items = append(items, models.GitProjectResponse{
+		items = append(items, models.GitProjectResp{
 			ID:          p.ID.String(),
 			ProjectID:   p.ProjectID,
 			ProjectName: p.ProjectName,
@@ -56,7 +56,7 @@ func ListGitProjects(c *gin.Context) {
 }
 
 func CreateGitProject(c *gin.Context) {
-	var req models.GitProjectRequest
+	var req models.GitProjectReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, err.Error())
 		return
@@ -84,7 +84,7 @@ func CreateGitProject(c *gin.Context) {
 		return
 	}
 
-	utils.SuccessWithMsg(c, models.GitProjectResponse{
+	utils.SuccessWithMsg(c, models.GitProjectResp{
 		ID:          project.ID.String(),
 		ProjectID:   project.ProjectID,
 		ProjectName: project.ProjectName,
@@ -105,7 +105,7 @@ func UpdateGitProject(c *gin.Context) {
 		return
 	}
 
-	var req models.GitProjectRequest
+	var req models.GitProjectReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorWithMsg(c, utils.CodeInvalidParams, err.Error())
 		return

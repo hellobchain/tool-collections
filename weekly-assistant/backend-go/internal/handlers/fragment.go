@@ -55,14 +55,21 @@ func AddFragment(c *gin.Context) {
 		utils.ErrorWithMsg(c, utils.CodeServerError, "添加碎片失败")
 		return
 	}
-
-	utils.Success(c, gin.H{
-		"id":          fragment.ID.String(),
-		"content":     fragment.Content,
-		"date":        services.FormatDate(*occurredAt),
-		"week_start":  services.FormatDate(weekStart),
-		"occurred_at": fragment.OccurredAt,
-		"is_carried":  fragment.IsCarried,
+	dateStr := ""
+	if fragment.OccurredAt != nil {
+		dateStr = services.FormatDate(*occurredAt)
+	}
+	occurredAtStr := ""
+	if fragment.OccurredAt != nil {
+		occurredAtStr = fragment.OccurredAt.Format(constants.DateFormatTimeHHMMSS)
+	}
+	utils.Success(c, models.FragmentAddResponse{
+		ID:         fragment.ID.String(),
+		Content:    fragment.Content,
+		Date:       dateStr,
+		WeekStart:  services.FormatDate(weekStart),
+		OccurredAt: occurredAtStr,
+		IsCarried:  fragment.IsCarried,
 	})
 }
 
@@ -114,11 +121,15 @@ func ListFragments(c *gin.Context) {
 		if f.OccurredAt != nil {
 			dateStr = services.FormatDate(*f.OccurredAt)
 		}
+		occurredAt := ""
+		if f.OccurredAt != nil {
+			occurredAt = f.OccurredAt.Format(constants.DateFormatTimeHHMMSS)
+		}
 		list = append(list, models.FragmentResponse{
 			ID:         f.ID.String(),
 			Content:    f.Content,
 			Date:       dateStr,
-			OccurredAt: f.OccurredAt,
+			OccurredAt: occurredAt,
 			IsCarried:  f.IsCarried,
 		})
 	}
