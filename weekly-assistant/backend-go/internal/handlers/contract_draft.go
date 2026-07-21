@@ -252,7 +252,10 @@ func runDraftAgent(taskID, userID, fileID, requirements string) {
 	if cf.FileSavePath != "" {
 		data, err := services.DownloadContractFile(context.Background(), cf.FileSavePath)
 		if err == nil {
-			templateText = extractText(cf.FileName, data)
+			templateText, err = extractText(cf.FileName, data)
+			if err != nil {
+				slog.Error("extractText error", "err", err)
+			}
 		}
 	}
 	if templateText == "" {

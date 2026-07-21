@@ -17,30 +17,9 @@ instance.interceptors.request.use(config => {
 
 // 响应拦截器
 instance.interceptors.response.use(
-  // 在成功回调中判断业务 code
   (response) => {
-    // 二进制流直接返回
     if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') { 
-      try {
-        // 尝试将二进制数据转为文本
-        const text = response.data; // 如果是 blob
-        const json = JSON.parse(text);
-        // 如果解析成功且包含 code，说明是业务错误
-        if (json.code && json.code !== SUCCESS_CODE) {
-          // 构造错误对象，保持与正常错误处理一致
-          const error = new Error(json.msg || '请求失败');
-          error.code = json.code;
-          error.data = json;
-          Message.error({ message: json.msg || '请求失败' });
-          return Promise.reject(error);
-        }
-        // 如果解析成功且 code 正确，说明是正常的二进制响应，但这种情况极少
-        // 绝大多数情况下，业务错误才会用 JSON，正常文件流不会解析为 JSON
-        return response;
-      } catch (e) {
-        // 解析失败，说明是真正的二进制文件流，正常返回
-        return response;
-      }
+      return response;
     }
     const { code, msg, data } = response.data
     // 业务成功

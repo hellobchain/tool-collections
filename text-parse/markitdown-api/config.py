@@ -8,7 +8,9 @@ class Settings(BaseSettings):
     
     # 安全配置
     API_KEY: str = "your-secret-api-key-here"
-    API_KEY_HEADER: str = "X-API-Key"
+    API_KEY_HEADER: str = "Authorization"
+
+    ENABLE_AUTH: bool = True
     
     # 限流配置
     RATE_LIMIT: str = "10/minute"

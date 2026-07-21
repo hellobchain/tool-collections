@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"io"
 	"sync"
 
 	"github.com/hellobchain/oss-go-sdk/common/models"
@@ -69,7 +70,10 @@ func DownloadContractFile(ctx context.Context, fileSavePath string) ([]byte, err
 	client := GetOssClient()
 	return client.Download(ctx, GetOssBucket(), fileSavePath)
 }
-
+func DownloadToFileReader(ctx context.Context, fileSavePath string, w io.Writer) error {
+	client := GetOssClient()
+	return client.DownloadTo(ctx, GetOssBucket(), fileSavePath, w)
+}
 func DeleteContractFile(ctx context.Context, fileSavePath string) error {
 	client := GetOssClient()
 	return client.DeleteObject(ctx, GetOssBucket(), fileSavePath)

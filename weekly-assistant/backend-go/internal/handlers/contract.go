@@ -143,7 +143,12 @@ func GetContractText(c *gin.Context) {
 		return
 	}
 
-	text := extractText(cf.FileName, data)
+	text, err := extractText(cf.FileName, data)
+	if err != nil {
+		slog.Errorf("Failed to extract text: %v", err)
+		utils.ErrorWithMsg(c, utils.CodeServerError, "获取文件内容失败")
+		return
+	}
 
 	utils.Success(c, text)
 }
@@ -501,19 +506,22 @@ func ExportReport(c *gin.Context) {
 
 // --- helpers ---
 
-func extractText(filename string, data []byte) string {
+func extractText(filename string, data []byte) (string, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
 	case ".txt":
-		return string(data)
+		return string(data), nil
 	case ".docx":
-		return extractDocxText(data)
+		// return extractDocxText(data)
+		return services.DocConvertText(data, filename)
 	case ".doc":
-		return extractDocText(data)
+		// return extractDocText(data)
+		return services.DocConvertText(data, filename)
 	case ".pdf":
-		return extractPDFText(data)
+		// return extractPDFText(data)
+		return services.DocConvertText(data, filename)
 	default:
-		return string(data)
+		return string(data), nil
 	}
 }
 
@@ -1065,7 +1073,11 @@ func runReviewEngine(review *models.ContractReview, files []models.ContractFile,
 		if f.FileSavePath != "" {
 			data, err := services.DownloadContractFile(context.Background(), f.FileSavePath)
 			if err == nil {
-				text := extractText(f.FileName, data)
+				text, err := extractText(f.FileName, data)
+				if err != nil {
+					slog.Error("Failed to extract text from file", "file_id", f.ID, "error", err)
+					break
+				}
 				allText += text + "\n"
 			}
 		}

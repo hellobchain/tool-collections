@@ -50,6 +50,11 @@ type Config struct {
 
 	// CloseRegister bool
 	CloseRegister bool
+
+	DocConvertURL     string
+	DocConvertRouter  string
+	DocConvertTimeout int
+	DocConvertAPIKey  string
 }
 
 // 初始化用户
@@ -86,6 +91,11 @@ func LoadConfig() {
 	closeRegister, _ := strconv.ParseBool(getEnv("CLOSE_REGISTER", "true"))
 
 	schedulerEnable, _ := strconv.ParseBool(getEnv("SCHEDULER_ENABLE", "true"))
+
+	docConvertURL := getEnv("DOC_CONVERT_URL", "http://docling-service:5001")
+	docConvertAPIKey := getEnv("DOC_CONVERT_API_KEY", "your-secret-api-key-change-me")
+	docConvertRouter := getEnv("DOC_CONVERT_ROUTER", "/text-parse/v1/convert/file")
+	docConvertTimeout, _ := strconv.Atoi(getEnv("DOC_CONVERT_TIMEOUT", "300"))
 	AppConfig = &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     dbPort,
@@ -117,6 +127,12 @@ func LoadConfig() {
 		Port:          port,
 		GinMode:       getEnv("GIN_MODE", "release"),
 		CloseRegister: closeRegister,
+
+		DocConvertURL: docConvertURL,
+
+		DocConvertAPIKey:  docConvertAPIKey,
+		DocConvertRouter:  docConvertRouter,
+		DocConvertTimeout: docConvertTimeout,
 	}
 
 	if AppConfig.JWTSecret == "" {

@@ -16,6 +16,7 @@ class ErrorCode:
     UNKNOWN_ERROR = 9999
     NOT_FOUND = 404
     INVALID_API_KEY = 2001
+    MISS_API_KEY = 2002
 
 
 T = TypeVar("T")

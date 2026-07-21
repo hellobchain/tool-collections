@@ -76,6 +76,13 @@ api_key_header = APIKeyHeader(name=settings.API_KEY_HEADER, auto_error=True)
 
 
 async def verify_api_key(api_key: str = Depends(api_key_header)):
+    if not settings.ENABLE_AUTH:
+        return True
+    if not api_key:
+        raise fail(
+            code=ErrorCode.MISS_API_KEY,
+            msg="Miss API Key"
+        )
     if api_key != settings.API_KEY:
         logger.warning(f"非法API Key尝试")
         raise fail(

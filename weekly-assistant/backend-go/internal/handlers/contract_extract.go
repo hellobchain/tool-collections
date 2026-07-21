@@ -358,7 +358,10 @@ func runExtractAgent(taskID uuid.UUID) {
 		if cf.FileSavePath != "" {
 			data, err := services.DownloadContractFile(context.Background(), cf.FileSavePath)
 			if err == nil {
-				docText = extractText(cf.FileName, data)
+				docText, err = extractText(cf.FileName, data)
+				if err != nil {
+					slog.Error("Failed to extract text from file", "file_id", fileID, "error", err)
+				}
 			}
 		}
 		if docText == "" {

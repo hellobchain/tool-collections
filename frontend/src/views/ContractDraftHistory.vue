@@ -162,7 +162,7 @@ export default {
     handleDelete(row) {
       this.$confirm('确定删除此记录？', '提示', { confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning' }).then(async () => {
         try {
-          await contractApi.deleteDraft(row.id)
+          await contractApi.deleteDraftHistory(row.id)
           this.$message.success('删除成功')
           this.fetchList()
         } catch {

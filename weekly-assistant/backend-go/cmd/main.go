@@ -130,6 +130,9 @@ func main() {
 
 		// JSON Compare
 		apiGroup.POST("/json-compare/v1/compare", handlers.JsonCompare)
+
+		// Document Convert
+		apiGroup.POST("/doc-convert/v1/convert", handlers.DocConvert)
 	}
 
 	// 启动周报自动生成定时任务
