@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import APIKeyHeader
 from pydantic import ValidationError
-from config import HOST, PORT, API_KEY_HEADER, ENABLE_AUTH, API_KEY
+from app.config import HOST, PORT, API_KEY_HEADER, ENABLE_AUTH, API_KEY
 
 from app.converter import DoclingConverter
 from app.utils import disposition_filename
@@ -85,14 +85,14 @@ async def verify_api_key(api_key: str = Depends(api_key_header)):
     if not ENABLE_AUTH:
         return True
     if not api_key:
-        raise fail(
-            code=ErrorCode.MISS_API_KEY,
-            msg="Miss API Key"
+        raise HTTPException(
+            status_code=401,
+            detail="Miss API Key"
         )
     if api_key != API_KEY:
-        raise fail(
-            code=ErrorCode.INVALID_API_KEY,
-            msg="无效的API Key"
+        raise HTTPException(
+            status_code=401,
+            detail="无效的API Key"
         )
     return api_key
 # ---------- 端点 ----------
