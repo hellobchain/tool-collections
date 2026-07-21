@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 from pathlib import Path
@@ -23,24 +24,10 @@ def _qn(tag: str) -> str:
 
 class DoclingConverter:
     def __init__(self):
-        from docling.document_converter import DocumentConverter, PdfFormatOption
-        from docling.datamodel.base_models import InputFormat
-        from docling.datamodel.pipeline_options import PdfPipelineOptions
-
-        pipeline_options = PdfPipelineOptions()
-        pipeline_options.do_ocr = True
-        pipeline_options.do_table_structure = True
-
-        self.converter = DocumentConverter(
-            format_options={
-                InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
-            }
-        )
+        from docling.document_converter import DocumentConverter
+        self.converter = DocumentConverter()
 
     def _resolve_docx_numbering(self, docx_path: Path) -> Path:
-        """Resolve auto-numbering by editing XML inside docx zip directly.
-        Returns path to modified file (could be same as input if no changes)."""
-
         with zipfile.ZipFile(str(docx_path), 'r') as z:
             doc_xml = z.read('word/document.xml')
             numbering_xml = z.read('word/numbering.xml') if 'word/numbering.xml' in z.namelist() else None
@@ -51,7 +38,6 @@ class DoclingConverter:
         if body is None:
             return docx_path
 
-        # Parse numbering
         abstract_num_map: Dict[str, Dict[str, Dict]] = {}
         num_map: Dict[str, str] = {}
 
@@ -90,7 +76,6 @@ class DoclingConverter:
                                 abstract_num_map[abstract_num_id][ilvl] = {}
                             abstract_num_map[abstract_num_id][ilvl]['start'] = int(start_override.get(_qn('w:val'), '1'))
 
-        # Parse styles for list style definitions
         style_defs: Dict[str, tuple] = {}
         if styles_xml is not None:
             styles_tree = etree.fromstring(styles_xml)
@@ -105,7 +90,6 @@ class DoclingConverter:
                         if nid is not None:
                             style_defs[sid] = (nid.get(_qn('w:val')), ilvl_el.get(_qn('w:val'), '0') if ilvl_el is not None else '0')
 
-        # ---- text extraction helpers ----
         def _get_para_text(para_elem) -> str:
             texts: list[str] = []
             for t in para_elem.iter(_qn('w:t')):
@@ -150,7 +134,6 @@ class DoclingConverter:
             return result
 
         def _find_effective_num_pr(para_elem, pPr):
-            """Get effective (num_id, ilvl) for a paragraph, checking inline and pStyle."""
             numPr = pPr.find(_qn('w:numPr'))
             if numPr is not None:
                 nid_el = numPr.find(_qn('w:numId'))
@@ -168,7 +151,6 @@ class DoclingConverter:
         def _is_list_style(sid: str) -> bool:
             if styles_xml is None:
                 return False
-            # Cache check
             if sid in _list_style_cache:
                 return _list_style_cache[sid]
             styles_tree = etree.fromstring(styles_xml) if isinstance(styles_xml, bytes) else styles_xml
@@ -182,7 +164,6 @@ class DoclingConverter:
 
         _list_style_cache: Dict[str, bool] = {}
 
-        # ---- main loop ----
         counters: Dict[str, int] = {}
         prev_key: Optional[str] = None
         modified = False
@@ -213,7 +194,6 @@ class DoclingConverter:
             if num_fmt == 'bullet':
                 continue
 
-            # Counter logic
             if prev_key is not None:
                 prev_parts = prev_key.split(':')
                 prev_abstract = prev_parts[0]
@@ -250,26 +230,21 @@ class DoclingConverter:
             if not numbered_text:
                 continue
 
-            # Prepend numbering text
             existing_text = _get_para_text(para)
             if not existing_text:
                 continue
 
-            # Remove all existing runs (w:r) from the paragraph
             for r in para.findall(_qn('w:r')):
                 para.remove(r)
 
-            # Add a new run with numbering + text
             new_run = etree.SubElement(para, _qn('w:r'))
             new_t = etree.SubElement(new_run, _qn('w:t'))
             new_t.set('{http://www.w3.org/XML/1998/namespace}space', 'preserve')
             new_t.text = f'{numbered_text} {existing_text}'.strip()
 
-            # Remove numPr
             if numPr is not None:
                 pPr.remove(numPr)
             else:
-                # Remove via pStyle
                 pStyle = pPr.find(_qn('w:pStyle'))
                 if pStyle is not None and _is_list_style(pStyle.get(_qn('w:val'))):
                     pPr.remove(pStyle)
@@ -279,7 +254,6 @@ class DoclingConverter:
         if not modified:
             return docx_path
 
-        # Write modified document.xml back into the zip
         suffix = Path(docx_path).suffix
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
         tmp_path = Path(tmp.name)
@@ -296,7 +270,6 @@ class DoclingConverter:
         return tmp_path
 
     def _convert_doc_to_docx(self, doc_path: Path) -> Path:
-        """Convert binary .doc to .docx using LibreOffice (soffice)."""
         if not _HAS_SOFFICE:
             raise RuntimeError(
                 "Cannot convert .doc file: LibreOffice not found. "
@@ -312,21 +285,32 @@ class DoclingConverter:
             raise RuntimeError(f"LibreOffice conversion failed: output not found at {docx_path}")
         return docx_path
 
+    def _convert_pdf_with_fitz(self, file_content: bytes) -> Dict[str, str]:
+        import fitz
+        doc = fitz.open(stream=file_content, filetype="pdf")
+        pages = []
+        for page in doc:
+            pages.append(page.get_text())
+        doc.close()
+        text = "\n\n".join(pages)
+        return {
+            "text": text,
+            "md": text,
+            "html": f"<pre>{text}</pre>",
+            "json": json.dumps({"content": text}, ensure_ascii=False, indent=2),
+        }
+
     def convert(self, file_content: bytes, filename: str, params: Dict[str, Any]) -> Dict[str, str]:
         suffix = Path(filename).suffix.lower()
+
+        if suffix == '.pdf':
+            return self._convert_pdf_with_fitz(file_content)
+
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
             tmp.write(file_content)
             tmp_path = Path(tmp.name)
 
         cleanup_paths = [tmp_path]
-
-        def _do_convert(path: Path) -> Any:
-            if path.suffix.lower() == '.docx':
-                processed = self._resolve_docx_numbering(path)
-                if processed != path:
-                    cleanup_paths.append(processed)
-                    return self.converter.convert(processed)
-            return self.converter.convert(path)
 
         try:
             if suffix == '.doc':
@@ -336,7 +320,7 @@ class DoclingConverter:
                 cleanup_paths.append(docx_path)
                 tmp_path = docx_path
 
-            result = _do_convert(tmp_path)
+            result = self.converter.convert(tmp_path)
 
             output = {}
             to_formats = params.get('to_formats', ['md'])
@@ -345,14 +329,13 @@ class DoclingConverter:
                 'md': result.document.export_to_markdown,
                 'json': lambda: result.document.export_to_dict(),
                 'html': result.document.export_to_html,
-                'text': result.document.export_to_text
+                'text': result.document.export_to_text,
             }
 
             for fmt in to_formats:
                 if fmt in format_map:
                     content = format_map[fmt]()
                     if fmt == 'json':
-                        import json
                         content = json.dumps(content, indent=2)
                     output[fmt] = content
 

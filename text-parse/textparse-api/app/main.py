@@ -2,10 +2,12 @@ import io
 import uuid
 import zipfile
 from pathlib import Path
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
+from fastapi import Depends, FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import APIKeyHeader
 from pydantic import ValidationError
+from config import HOST, PORT, API_KEY_HEADER, ENABLE_AUTH, API_KEY
 
 from app.converter import DoclingConverter
 from app.utils import disposition_filename
@@ -75,7 +77,24 @@ async def not_found_exception_handler(request: Request, exc):
         status_code=200,
         content=fail(code=ErrorCode.NOT_FOUND, msg="Endpoint not found").model_dump()
     )
+# ---------- 鉴权 ----------
+api_key_header = APIKeyHeader(name=API_KEY_HEADER, auto_error=True)
 
+
+async def verify_api_key(api_key: str = Depends(api_key_header)):
+    if not ENABLE_AUTH:
+        return True
+    if not api_key:
+        raise fail(
+            code=ErrorCode.MISS_API_KEY,
+            msg="Miss API Key"
+        )
+    if api_key != API_KEY:
+        raise fail(
+            code=ErrorCode.INVALID_API_KEY,
+            msg="无效的API Key"
+        )
+    return api_key
 # ---------- 端点 ----------
 
 @app.get("/text-parse/v1/health")
@@ -88,9 +107,10 @@ async def convert_file(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     to_formats: str = Form("md"),
-    do_ocr: bool = Form(True),
+    do_ocr: bool = Form(False),
     table_mode: str = Form("fast"),
-    pdf_backend: str = Form("dlparse_v2")
+    pdf_backend: str = Form("dlparse_v2"),
+    api_key: str = Depends(verify_api_key)
 ):
     MAX_FILE_SIZE = 100 * 1024 * 1024
     content = await file.read()
@@ -100,7 +120,7 @@ async def convert_file(
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
-        'do_ocr': do_ocr,
+        'do_ocr': False,
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
@@ -121,9 +141,10 @@ async def convert_file_stream(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     to_formats: str = Form("md"),
-    do_ocr: bool = Form(True),
+    do_ocr: bool = Form(False),
     table_mode: str = Form("fast"),
-    pdf_backend: str = Form("dlparse_v2")
+    pdf_backend: str = Form("dlparse_v2"),
+    api_key: str = Depends(verify_api_key)
 ):
     MAX_FILE_SIZE = 100 * 1024 * 1024
     content = await file.read()
@@ -133,7 +154,7 @@ async def convert_file_stream(
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
-        'do_ocr': do_ocr,
+        'do_ocr': False,
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
@@ -183,9 +204,10 @@ async def convert_file_async(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     to_formats: str = Form("md"),
-    do_ocr: bool = Form(True),
+    do_ocr: bool = Form(False),
     table_mode: str = Form("fast"),
-    pdf_backend: str = Form("dlparse_v2")
+    pdf_backend: str = Form("dlparse_v2"),
+    api_key: str = Depends(verify_api_key)
 ):
     content = await file.read()
 
@@ -200,7 +222,7 @@ async def convert_file_async(
     formats = [f.strip() for f in to_formats.split(',')]
     params = {
         'to_formats': formats,
-        'do_ocr': do_ocr,
+        'do_ocr': False,
         'table_mode': table_mode,
         'pdf_backend': pdf_backend
     }
@@ -242,7 +264,10 @@ async def process_conversion(task_id: str, temp_path: Path, params: dict):
 
 
 @app.get("/text-parse/v1/status/{task_id}")
-async def get_task_status(task_id: str):
+async def get_task_status(
+    task_id: str,
+    api_key: str = Depends(verify_api_key)
+):
     if task_id not in task_store:
         return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
 
@@ -257,7 +282,10 @@ async def get_task_status(task_id: str):
 
 
 @app.get("/text-parse/v1/download/{task_id}")
-async def download_task(task_id: str):
+async def download_task(
+    task_id: str,
+    api_key: str = Depends(verify_api_key)
+):
     if task_id not in task_store:
         return fail(ErrorCode.TASK_NOT_FOUND, "Task not found")
 
@@ -305,7 +333,10 @@ async def download_task(task_id: str):
 
 
 @app.delete("/text-parse/v1/task/{task_id}")
-async def delete_task(task_id: str):
+async def delete_task(
+    task_id: str,
+    api_key: str = Depends(verify_api_key)
+):
     if task_id in task_store:
         del task_store[task_id]
         return ok(data={"task_id": task_id})
@@ -314,4 +345,4 @@ async def delete_task(task_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5001)
+    uvicorn.run(app, host=HOST, port=PORT)
