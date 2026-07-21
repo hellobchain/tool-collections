@@ -9,3 +9,7 @@ models/
 *.log
 .idea/
 .vscode/
+*.yml
+Dockerfile
+*.sh
+*.md
