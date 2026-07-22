@@ -136,6 +136,9 @@ func main() {
 
 		// JSONL Stream
 		apiGroup.POST("/jsonl-read/v1/data/stream", handlers.StreamJSONL)
+
+		// JSONL Convert to Docx
+		apiGroup.POST("/jsonl-read/v1/data/convert-to-docx", handlers.ConvertJSONLToDocx)
 	}
 
 	// 启动周报自动生成定时任务
