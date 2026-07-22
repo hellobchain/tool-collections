@@ -55,6 +55,8 @@ type Config struct {
 	DocConvertRouter  string
 	DocConvertTimeout int
 	DocConvertAPIKey  string
+
+	JSONLAllowedDir string
 }
 
 // 初始化用户
@@ -133,6 +135,8 @@ func LoadConfig() {
 		DocConvertAPIKey:  docConvertAPIKey,
 		DocConvertRouter:  docConvertRouter,
 		DocConvertTimeout: docConvertTimeout,
+
+		JSONLAllowedDir: getEnv("JSONL_ALLOWED_DIR", ""),
 	}
 
 	if AppConfig.JWTSecret == "" {
