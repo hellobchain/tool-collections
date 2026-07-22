@@ -8,11 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/hellobchain/wswlog/wlogging"
 )
-
-var jsonlSlog = wlogging.MustGetLoggerWithoutName()
 
 type GenericRecord struct {
 	Raw json.RawMessage
@@ -81,7 +77,7 @@ func ReadJSONLStream(ctx context.Context, filePath string, offset, limit int, re
 	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
-			jsonlSlog.Warnf("JSONL stream cancelled at line %d: %v", lineNum, ctx.Err())
+			slog.Warnf("JSONL stream cancelled at line %d: %v", lineNum, ctx.Err())
 			return
 		default:
 		}
@@ -89,20 +85,23 @@ func ReadJSONLStream(ctx context.Context, filePath string, offset, limit int, re
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
+			slog.Warnf("empty line at line %d", lineNum)
 			continue
 		}
 
 		if lineNum <= offset {
+			slog.Warnf("skipping line %d", lineNum)
 			continue
 		}
 
 		if limit > 0 && returned >= limit {
+			slog.Warnf("reached limit of %d lines", limit)
 			break
 		}
-
 		raw := json.RawMessage(line)
 		if !json.Valid([]byte(line)) {
-			jsonlSlog.Errorf("failed to parse JSONL at line %d: invalid JSON", lineNum)
+			slog.Warnf("invalid JSON at line %d", lineNum)
+			slog.Errorf("failed to parse JSONL at line %d: invalid JSON", lineNum)
 			results <- StreamResult{Line: lineNum, Err: fmt.Errorf("parse error at line %d: invalid JSON", lineNum)}
 			returned++
 			continue
@@ -137,7 +136,7 @@ func ReadJSONLStreamWithSchema(ctx context.Context, filePath string, offset, lim
 	for scanner.Scan() {
 		select {
 		case <-ctx.Done():
-			jsonlSlog.Warnf("JSONL stream cancelled at line %d: %v", lineNum, ctx.Err())
+			slog.Warnf("JSONL stream cancelled at line %d: %v", lineNum, ctx.Err())
 			return
 		default:
 		}
@@ -145,19 +144,22 @@ func ReadJSONLStreamWithSchema(ctx context.Context, filePath string, offset, lim
 		lineNum++
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
+			slog.Warnf("empty line at line %d", lineNum)
 			continue
 		}
 
 		if lineNum <= offset {
+			slog.Warnf("skipping line %d", lineNum)
 			continue
 		}
 
 		if limit > 0 && returned >= limit {
+			slog.Warnf("reached limit of %d lines", limit)
 			break
 		}
 
 		if !json.Valid([]byte(line)) {
-			jsonlSlog.Errorf("failed to parse JSONL at line %d: invalid JSON", lineNum)
+			slog.Errorf("failed to parse JSONL at line %d: invalid JSON", lineNum)
 			results <- StreamResult{Line: lineNum, Err: fmt.Errorf("parse error at line %d: invalid JSON", lineNum)}
 			returned++
 			continue
@@ -165,7 +167,7 @@ func ReadJSONLStreamWithSchema(ctx context.Context, filePath string, offset, lim
 
 		var data map[string]interface{}
 		if err := json.Unmarshal([]byte(line), &data); err != nil {
-			jsonlSlog.Errorf("failed to parse JSONL at line %d: %v", lineNum, err)
+			slog.Errorf("failed to parse JSONL at line %d: %v", lineNum, err)
 			results <- StreamResult{Line: lineNum, Err: fmt.Errorf("parse error at line %d: %w", lineNum, err)}
 			returned++
 			continue
@@ -173,7 +175,7 @@ func ReadJSONLStreamWithSchema(ctx context.Context, filePath string, offset, lim
 
 		for key := range schema {
 			if _, ok := data[key]; !ok {
-				jsonlSlog.Warnf("schema validation warning at line %d: missing field '%s'", lineNum, key)
+				slog.Warnf("schema validation warning at line %d: missing field '%s'", lineNum, key)
 			}
 		}
 
