@@ -49,8 +49,8 @@ type Config struct {
 	GinMode string
 
 	// CloseRegister bool
-	CloseRegister bool
-
+	CloseRegister     bool
+	DocConvertEnable  bool
 	DocConvertURL     string
 	DocConvertRouter  string
 	DocConvertTimeout int
@@ -98,6 +98,7 @@ func LoadConfig() {
 	docConvertAPIKey := getEnv("DOC_CONVERT_API_KEY", "your-secret-api-key-change-me")
 	docConvertRouter := getEnv("DOC_CONVERT_ROUTER", "/text-parse/v1/convert/file")
 	docConvertTimeout, _ := strconv.Atoi(getEnv("DOC_CONVERT_TIMEOUT", "300"))
+	docConvertEnable, _ := strconv.ParseBool(getEnv("DOC_CONVERT_ENABLE", "false"))
 	AppConfig = &Config{
 		DBHost:     getEnv("DB_HOST", "localhost"),
 		DBPort:     dbPort,
@@ -135,6 +136,7 @@ func LoadConfig() {
 		DocConvertAPIKey:  docConvertAPIKey,
 		DocConvertRouter:  docConvertRouter,
 		DocConvertTimeout: docConvertTimeout,
+		DocConvertEnable:  docConvertEnable,
 
 		JSONLAllowedDir: getEnv("JSONL_ALLOWED_DIR", ""),
 	}

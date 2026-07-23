@@ -35,6 +35,9 @@ type ConvertResponse struct {
 
 func DocConvertFile(req *ConvertRequest) (*ConvertResponse, error) {
 	cfg := config.AppConfig
+	if !cfg.DocConvertEnable {
+		return nil, fmt.Errorf("doc convert is not enabled")
+	}
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 

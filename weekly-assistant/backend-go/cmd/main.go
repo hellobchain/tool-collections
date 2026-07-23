@@ -128,6 +128,9 @@ func main() {
 		apiGroup.GET("/contract/v1/draft/:taskId/result", handlers.GetDraftResult)
 		apiGroup.GET("/contract/v1/draft/:taskId/download", handlers.DownloadDraft)
 
+		// Markitdown - convert files to Markdown
+		apiGroup.POST("/markitdown/v1/convert", handlers.MarkitdownConvert)
+
 		// JSON Compare
 		apiGroup.POST("/json-compare/v1/compare", handlers.JsonCompare)
 

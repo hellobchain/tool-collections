@@ -511,30 +511,29 @@ func extractText(filename string, data []byte) (string, error) {
 	switch ext {
 	case ".txt":
 		return string(data), nil
-	case ".docx":
-		docxText, err := services.DocConvertText(data, filename)
-		if err != nil {
-			// Fallback: use local DOCX text extraction if the service fails
-			slog.Warnf("Failed to convert docx file: %v", err)
-			return extractDocxText(data), nil
-		}
-		return docxText, nil
-	case ".doc":
+	case ".docx", ".doc", ".pdf":
+		// Try external doc conversion service first
 		docText, err := services.DocConvertText(data, filename)
-		if err != nil {
-			// Fallback: use local DOC text extraction if the service fails
-			slog.Warnf("Failed to convert doc file: %v", err)
-			return extractDocText(data), nil
+		if err == nil {
+			return docText, nil
 		}
-		return docText, nil
-	case ".pdf":
-		pdfText, err := services.DocConvertText(data, filename)
+		slog.Warnf("Failed to convert via external service, using local parser: %v", err)
+
+		// Fallback: use the new doc_reader service (with libraries from GitHub)
+		text, err := services.ReadFile(filename, data)
 		if err != nil {
-			// Fallback: use local PDF text extraction if the service fails
-			slog.Warnf("Failed to convert pdf file: %v", err)
-			return extractPDFText(data), nil
+			slog.Warnf("doc_reader failed: %v, using legacy extraction", err)
+			// Ultimate fallback: legacy extraction
+			switch ext {
+			case ".docx":
+				return extractDocxText(data), nil
+			case ".doc":
+				return extractDocText(data), nil
+			case ".pdf":
+				return extractPDFText(data), nil
+			}
 		}
-		return pdfText, nil
+		return text, nil
 	default:
 		return string(data), nil
 	}
@@ -599,7 +598,11 @@ func hasRootEntry(dirData []byte) bool {
 		return false
 	}
 	rootName := []byte{'R', 0, 'o', 0, 'o', 0, 't', 0, ' ', 0, 'E', 0, 'n', 0, 't', 0, 'r', 0, 'y', 0}
-	for i := 0; i < min(10, len(dirData)-20); i += 128 {
+	maxEntries := 10
+	if len(dirData)-20 < maxEntries {
+		maxEntries = len(dirData) - 20
+	}
+	for i := 0; i < maxEntries; i += 128 {
 		match := true
 		for j := 0; j < len(rootName); j++ {
 			if dirData[i+j] != rootName[j] {
@@ -961,36 +964,7 @@ func tryDecode(data []byte) string {
 }
 
 func isTextRune(r rune) bool {
-	switch {
-	case r >= 0x20 && r <= 0x7E: // ASCII printable
-		return true
-	case r >= 0x4E00 && r <= 0x9FFF: // CJK
-		return true
-	case r >= 0x3400 && r <= 0x4DBF:
-		return true
-	case r >= 0x2E80 && r <= 0x2EFF:
-		return true
-	case r >= 0x3000 && r <= 0x303F:
-		return true
-	case r >= 0xFF00 && r <= 0xFFEF:
-		return true
-	case r >= 0x2000 && r <= 0x206F:
-		return true
-	case r >= 0xFE30 && r <= 0xFE4F:
-		return true
-	case r >= 0x00A0 && r <= 0x00FF:
-		return true
-	case r >= 0x0100 && r <= 0x024F:
-		return true
-	case r >= 0x0370 && r <= 0x03FF:
-		return true
-	case r >= 0x0400 && r <= 0x04FF:
-		return true
-	case r == 0x0A || r == 0x0D:
-		return true
-	default:
-		return false
-	}
+	return utils.IsTextRune(r)
 }
 
 func extractPrintableStrings(data []byte) string {

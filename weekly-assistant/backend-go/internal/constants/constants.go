@@ -1,5 +1,19 @@
 package constants
 
+// ext
+const (
+	DocxExt = ".docx"
+	PdfExt  = ".pdf"
+	DocExt  = ".doc"
+	HtmlExt = ".html"
+	HtmExt  = ".htm"
+	MdExt   = ".md"
+	TxtExt  = ".txt"
+	PngExt  = ".png"
+	JpgExt  = ".jpg"
+	JpegExt = ".jpeg"
+)
+
 const (
 	LOCAL_SAVE_TYPE      = "local"
 	OSS_S3_SAVE_TYPE     = "oss_s3"

@@ -1,6 +1,6 @@
 module github.com/hellobchain/weekly-assistant
 
-go 1.25.0
+go 1.25
 
 require (
 	github.com/360EntSecGroup-Skylar/excelize v1.4.1
@@ -12,6 +12,8 @@ require (
 	github.com/hellobchain/oss-go-sdk v0.0.0-20251219042835-00e8e64a96cf
 	github.com/hellobchain/wswlog v0.0.0-20250917145740-f4ff1a0c0917
 	github.com/joho/godotenv v1.5.1
+	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
+	github.com/richardlehane/mscfb v1.0.7
 	golang.org/x/crypto v0.18.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
@@ -46,6 +48,7 @@ require (
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/richardlehane/msoleps v1.0.3 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sykesm/zap-logfmt v0.0.4 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
@@ -56,7 +59,7 @@ require (
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/net v0.16.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/text v0.40.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
