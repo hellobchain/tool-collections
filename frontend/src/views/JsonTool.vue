@@ -119,7 +119,7 @@
         </el-card>
 
         <div class="status-bar">
-          <span>字符: {{ String(outputText || '').length }}</span>
+          <span>字符: {{ (typeof outputText === 'string' ? outputText : '').length }}</span>
           <span>行数: {{ outputLineCount }}</span>
           <span>状态: <el-tag :type="statusType" size="mini">{{ statusText }}</el-tag></span>
         </div>
@@ -163,10 +163,12 @@ export default {
   },
   computed: {
     inputLineCount() {
-      return ((this.inputText || '').match(/\n/g) || []).length + 1
+      var t = typeof this.inputText === 'string' ? this.inputText : ''
+      return (t.match(/\n/g) || []).length + 1
     },
     outputLineCount() {
-      return ((this.outputText || '').match(/\n/g) || []).length + 1
+      var t = typeof this.outputText === 'string' ? this.outputText : ''
+      return (t.match(/\n/g) || []).length + 1
     },
     statusType() {
       if (!this.inputText.trim()) return 'info'
