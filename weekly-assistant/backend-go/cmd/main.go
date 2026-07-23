@@ -143,6 +143,9 @@ func main() {
 		// Document Type Detection
 		apiGroup.POST("/doc-type/v1/detect", handlers.DetectDocType)
 
+		// JSON Tools
+		apiGroup.POST("/json-tool/v1/lang-convert", handlers.JsonLangConvert)
+
 		// JSONL Stream
 		apiGroup.POST("/jsonl-read/v1/data/stream", handlers.StreamJSONL)
 

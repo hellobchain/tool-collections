@@ -27,6 +27,11 @@ const router = new Router({
           component: () => import('@/views/DocumentParse.vue')
         },
         {
+          path: '/json-tool',
+          name: 'JsonTool',
+          component: () => import('@/views/JsonTool.vue')
+        },
+        {
           path: '/contract-review',
           name: 'ContractReview',
           component: () => import('@/views/ContractReview.vue')

@@ -27,6 +27,10 @@
           <i class="el-icon-reading"></i>
           <span slot="title">文档转换</span>
         </el-menu-item>
+        <el-menu-item index="/json-tool">
+          <i class="el-icon-s-operation"></i>
+          <span slot="title">JSON 工具</span>
+        </el-menu-item>
         <el-submenu index="/contract">
           <template slot="title">
             <i class="el-icon-document-checked"></i>
