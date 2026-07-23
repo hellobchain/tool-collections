@@ -140,6 +140,9 @@ func main() {
 		// Document Convert
 		apiGroup.POST("/doc-convert/v1/convert", handlers.DocConvert)
 
+		// Document Type Detection
+		apiGroup.POST("/doc-type/v1/detect", handlers.DetectDocType)
+
 		// JSONL Stream
 		apiGroup.POST("/jsonl-read/v1/data/stream", handlers.StreamJSONL)
 

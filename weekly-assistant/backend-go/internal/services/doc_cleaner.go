@@ -19,14 +19,6 @@ type CleanOptions struct {
 	AcceptChanges  bool // Accept all tracked changes (insertions/deletions)
 }
 
-// defaultCleanOptions returns options with all cleaning enabled.
-func defaultCleanOptions() CleanOptions {
-	return CleanOptions{
-		RemoveComments: true,
-		AcceptChanges:  true,
-	}
-}
-
 // CleanDocx cleans a DOCX file according to the given options.
 // Returns the cleaned DOCX bytes.
 func (c *DocCleaner) CleanDocx(data []byte, opts CleanOptions) ([]byte, error) {
@@ -210,7 +202,7 @@ func (ts *tagStripper) Replace(s string) string {
 	return s
 }
 
-func (ts *tagStripper) removeTags(s, openPrefix, closeSuffix string) string {
+func (ts *tagStripper) removeTags(s, openPrefix, _ string) string {
 	var result strings.Builder
 	for {
 		idx := strings.Index(s, openPrefix)

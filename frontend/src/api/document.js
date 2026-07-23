@@ -31,3 +31,13 @@ export function mdFile2DocxFile(file) {
     timeout: 180000
   })
 }
+
+export function detectDocType(file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post('/weekly-assistant/doc-type/v1/detect', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}

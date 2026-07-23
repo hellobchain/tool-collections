@@ -266,13 +266,7 @@ func readU32LE(data []byte, off int) uint32 {
 	return uint32(data[off]) | uint32(data[off+1])<<8 | uint32(data[off+2])<<16 | uint32(data[off+3])<<24
 }
 
-// readU16LE reads a 16-bit unsigned little-endian integer from data at offset.
-func readU16LE(data []byte, off int) uint16 {
-	if off+2 > len(data) {
-		return 0
-	}
-	return uint16(data[off]) | uint16(data[off+1])<<8
-}
+
 
 const (
 	clxtPcdt = 0x01 // CLX type: Piece Table
@@ -448,6 +442,23 @@ func isOLE2(data []byte) bool {
 		data[2] == 0x11 && data[3] == 0xE0 &&
 		data[4] == 0xA1 && data[5] == 0xB1 &&
 		data[6] == 0x1A && data[7] == 0xE1
+}
+
+// DetectDocType detects whether file content is a .doc or .docx by examining magic bytes.
+// Returns "docx", "doc", or "unknown".
+func DetectDocType(data []byte) string {
+	if len(data) < 8 {
+		return "unknown"
+	}
+	// DOCX is a ZIP archive: magic bytes PK\x03\x04
+	if data[0] == 0x50 && data[1] == 0x4B && data[2] == 0x03 && data[3] == 0x04 {
+		return "docx"
+	}
+	// DOC is OLE2 compound document
+	if isOLE2(data) {
+		return "doc"
+	}
+	return "unknown"
 }
 
 func tryDecodeUTF16LE(data []byte) string {

@@ -56,6 +56,50 @@
         </el-card>
       </el-tab-pane>
 
+      <el-tab-pane label="文档格式识别" name="detectType">
+        <el-card class="upload-card">
+          <el-upload
+            ref="detectUpload"
+            drag
+            action=""
+            :auto-upload="false"
+            :show-file-list="false"
+            :on-change="handleDetectFileChange"
+            :on-remove="handleDetectFileRemove"
+            :file-list="detectFileList"
+            :accept="'.doc,.docx'"
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将 Word 文件拖到此处，或<em>点击选择</em></div>
+            <div slot="tip" class="el-upload__tip">支持 .doc / .docx 格式，通过文件内容判断真实格式</div>
+          </el-upload>
+        </el-card>
+        <el-card v-if="detectFileList.length" class="file-list-card">
+          <div v-for="f in detectFileList" :key="f.id" class="file-item">
+            <span class="file-name">{{ f.name }}</span>
+            <span class="file-size">{{ toKB(f.size) }}</span>
+            <el-button type="text" size="mini" icon="el-icon-delete" @click="removeDetectFile(f)" style="color:#999;"/>
+          </div>
+        </el-card>
+
+        <el-card class="options-card">
+          <div class="action-bar" style="text-align: center;">
+            <el-button type="primary" :loading="detecting" :disabled="!detectSelectedFile" @click="handleDetectType">
+              {{ detecting ? '识别中...' : '识别格式' }}
+            </el-button>
+          </div>
+        </el-card>
+
+        <el-card v-if="detectResult !== null" class="options-card">
+          <div style="text-align: center; padding: 16px 0;">
+            <span style="font-size: 16px; margin-right: 12px;">真实格式：</span>
+            <el-tag v-if="detectResult === 'docx'" type="success" size="medium" style="font-size: 16px; padding: 4px 16px;">DOCX（Open XML）</el-tag>
+            <el-tag v-else-if="detectResult === 'doc'" type="warning" size="medium" style="font-size: 16px; padding: 4px 16px;">DOC（OLE2 复合文档）</el-tag>
+            <el-tag v-else type="info" size="medium" style="font-size: 16px; padding: 4px 16px;">无法识别（不是有效的 Word 文档）</el-tag>
+          </div>
+        </el-card>
+      </el-tab-pane>
+
       <el-tab-pane label="JSON 比对" name="jsonCompare">
         <div class="compare-layout">
           <div class="compare-inputs">
@@ -152,7 +196,7 @@
 </template>
 
 <script>
-import { convertFile, mdFile2DocxFile, jsonCompare } from '@/api/document'
+import { convertFile, mdFile2DocxFile, jsonCompare, detectDocType } from '@/api/document'
 
 export default {
   name: 'DocumentParse',
@@ -170,6 +214,11 @@ export default {
       mdFileList: [],
       mdSelectedFile: null,
       mdConverting: false,
+      // mode: detect type
+      detectFileList: [],
+      detectSelectedFile: null,
+      detecting: false,
+      detectResult: null,
       // shared result
       resultBlob: null,
       resultFileName: '',
@@ -206,6 +255,50 @@ export default {
       this.mdFileList = this.mdFileList.filter(f => f.id !== file.id)
       if (this.mdSelectedFile && this.mdSelectedFile.name === file.name) {
         this.mdSelectedFile = null
+      }
+    },
+    // === detect type ===
+    removeDetectFile(file) {
+      this.detectFileList = this.detectFileList.filter(f => f.id !== file.id)
+      if (this.detectSelectedFile && this.detectSelectedFile.name === file.name) {
+        this.detectSelectedFile = null
+      }
+    },
+    handleDetectFileRemove() {
+      this.detectSelectedFile = null
+      this.detectFileList = []
+      this.detectResult = null
+    },
+    handleDetectFileChange(file) {
+      if (!/\.docx?$/i.test(file.name)) {
+        this.$message.error('仅支持 .doc / .docx 格式文件')
+        return
+      }
+      if (file.size > 50 * 1024 * 1024) {
+        this.$message.error('文件大小不能超过 50MB')
+        return
+      }
+      if (this.detectFileList.length > 0) {
+        this.$message.error('仅支持单个文件！')
+        return
+      }
+      this.detectFileList = [file]
+      this.detectSelectedFile = file.raw
+      this.detectResult = null
+    },
+    async handleDetectType() {
+      if (!this.detectSelectedFile) return
+      this.detecting = true
+      try {
+        const res = await detectDocType(this.detectSelectedFile)
+        this.detectResult = res.data?.data?.type || 'unknown'
+        this.detectSelectedFile = null
+        this.detectFileList = []
+        this.$refs.detectUpload.clearFiles()
+      } catch {
+        this.$message.error('识别失败')
+      } finally {
+        this.detecting = false
       }
     },
     // === mode 1: format conversion ===
