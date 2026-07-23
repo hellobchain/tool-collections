@@ -131,6 +131,9 @@ func main() {
 		// Markitdown - convert files to Markdown
 		apiGroup.POST("/markitdown/v1/convert", handlers.MarkitdownConvert)
 
+		// Doc Clean - remove comments and accept track changes
+		apiGroup.POST("/doc-clean/v1/clean", handlers.DocClean)
+
 		// JSON Compare
 		apiGroup.POST("/json-compare/v1/compare", handlers.JsonCompare)
 

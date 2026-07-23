@@ -15,6 +15,7 @@ require (
 	github.com/ledongthuc/pdf v0.0.0-20250511090121-5959a4027728
 	github.com/richardlehane/mscfb v1.0.7
 	golang.org/x/crypto v0.18.0
+	golang.org/x/text v0.14.0
 	gorm.io/driver/postgres v1.5.4
 	gorm.io/gorm v1.25.5
 )
@@ -59,7 +60,6 @@ require (
 	golang.org/x/arch v0.5.0 // indirect
 	golang.org/x/net v0.16.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
 	google.golang.org/grpc v1.48.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect

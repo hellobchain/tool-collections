@@ -511,7 +511,7 @@ func extractText(filename string, data []byte) (string, error) {
 	switch ext {
 	case ".txt":
 		return string(data), nil
-	case ".docx", ".doc", ".pdf":
+	case constants.DocxExt, constants.DocExt, constants.PdfExt:
 		// Try external doc conversion service first
 		docText, err := services.DocConvertText(data, filename)
 		if err == nil {
@@ -525,11 +525,11 @@ func extractText(filename string, data []byte) (string, error) {
 			slog.Warnf("doc_reader failed: %v, using legacy extraction", err)
 			// Ultimate fallback: legacy extraction
 			switch ext {
-			case ".docx":
+			case constants.DocxExt:
 				return extractDocxText(data), nil
-			case ".doc":
+			case constants.DocExt:
 				return extractDocText(data), nil
-			case ".pdf":
+			case constants.PdfExt:
 				return extractPDFText(data), nil
 			}
 		}
