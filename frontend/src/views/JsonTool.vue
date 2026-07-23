@@ -407,7 +407,6 @@ export default {
         this.$message.error('语言转换失败')
       } finally {
         this.langConverting = false
-        this.langTarget = ''
       }
     },
 
