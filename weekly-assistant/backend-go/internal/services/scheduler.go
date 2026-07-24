@@ -106,7 +106,7 @@ func autoGenerateAndFinalize(userID string) error {
 
 	// 4. 加载默认提示词模板
 	var template models.PromptTemplate
-	narrativeType := "攻坚"
+	narrativeType := "稳健"
 	if err := database.DB.Where("user_id IS NULL AND category = 'default'").
 		Order("sort_order ASC").
 		First(&template).Error; err != nil {
