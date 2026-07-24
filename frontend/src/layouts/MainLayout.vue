@@ -73,6 +73,33 @@
             <span slot="title">我的起草</span>
           </el-menu-item>
         </el-submenu>
+
+        <el-submenu index="/stock">
+          <template slot="title">
+            <i class="el-icon-data-analysis"></i>
+            <span slot="title">股票分析</span>
+          </template>
+          <el-menu-item index="/stock-analysis">
+            <i class="el-icon-monitor"></i>
+            <span slot="title">智能分析</span>
+          </el-menu-item>
+          <el-menu-item index="/stock-agent">
+            <i class="el-icon-chat-dot-round"></i>
+            <span slot="title">AI 问股</span>
+          </el-menu-item>
+          <el-menu-item index="/market-review">
+            <i class="el-icon-trend"></i>
+            <span slot="title">大盘复盘</span>
+          </el-menu-item>
+          <el-menu-item index="/portfolio">
+            <i class="el-icon-s-management"></i>
+            <span slot="title">持仓管理</span>
+          </el-menu-item>
+          <el-menu-item index="/backtest">
+            <i class="el-icon-s-data"></i>
+            <span slot="title">策略回测</span>
+          </el-menu-item>
+        </el-submenu>
       </el-menu>
     </el-aside>
     <el-container class="app-main">

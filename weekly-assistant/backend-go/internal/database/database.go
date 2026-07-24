@@ -45,6 +45,17 @@ func InitDB() {
 		&models.ContractDraft{},
 		&models.ContractExtractTask{},
 		&models.ContractExtractResult{},
+		&models.StockAnalysisTask{},
+		&models.StockAnalysisReport{},
+		&models.StockWatchlist{},
+		&models.PortfolioAccount{},
+		&models.PortfolioTrade{},
+		&models.PortfolioCashLedger{},
+		&models.PortfolioCorporateAction{},
+		&models.AgentChatSession{},
+		&models.AgentChatMessage{},
+		&models.SystemConfig{},
+		&models.BacktestResult{},
 	)
 	if err != nil {
 		slog.Fatal("Failed to migrate database:", err)

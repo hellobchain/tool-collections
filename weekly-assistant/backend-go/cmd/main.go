@@ -151,6 +151,52 @@ func main() {
 
 		// JSONL Convert to Docx
 		apiGroup.POST("/jsonl-read/v1/data/convert-to-docx", handlers.ConvertJSONLToDocx)
+
+		// ===================== Stock Analysis =====================
+		// Analysis
+		apiGroup.POST("/stock/v1/analysis/analyze", handlers.TriggerStockAnalysis)
+		apiGroup.GET("/stock/v1/analysis/status/:taskId", handlers.GetStockAnalysisStatus)
+		apiGroup.GET("/stock/v1/analysis/tasks", handlers.ListStockAnalysisTasks)
+		apiGroup.POST("/stock/v1/analysis/market-review", handlers.TriggerMarketReview)
+		apiGroup.GET("/stock/v1/analysis/tasks/:taskId/flow", handlers.GetStockAnalysisTaskFlow)
+
+		// Stock Data
+		apiGroup.GET("/stock/v1/stocks/quote/:code", handlers.GetStockQuote)
+		apiGroup.GET("/stock/v1/stocks/history/:code", handlers.GetStockHistory)
+		apiGroup.GET("/stock/v1/stocks/watchlist", handlers.GetWatchlist)
+		apiGroup.POST("/stock/v1/stocks/watchlist/add", handlers.AddToWatchlist)
+		apiGroup.POST("/stock/v1/stocks/watchlist/remove", handlers.RemoveFromWatchlist)
+		apiGroup.POST("/stock/v1/stocks/import", handlers.ImportStockCodes)
+
+		// History
+		apiGroup.GET("/stock/v1/history", handlers.ListStockAnalysisHistory)
+		apiGroup.GET("/stock/v1/history/stocks", handlers.GetStockBar)
+		apiGroup.GET("/stock/v1/history/:id", handlers.GetStockHistoryDetail)
+		apiGroup.DELETE("/stock/v1/history", handlers.DeleteStockAnalysisHistory)
+		apiGroup.DELETE("/stock/v1/history/by-code/:code", handlers.DeleteStockAnalysisHistoryByCode)
+		apiGroup.GET("/stock/v1/history/:id/markdown", handlers.GetStockHistoryMarkdown)
+
+		// Agent Chat
+		apiGroup.POST("/stock/v1/agent/chat", handlers.AgentChat)
+		apiGroup.GET("/stock/v1/agent/skills", handlers.ListAgentSkills)
+		apiGroup.GET("/stock/v1/agent/chat/sessions", handlers.ListChatSessions)
+		apiGroup.GET("/stock/v1/agent/chat/sessions/:sessionId", handlers.GetChatSessionMessages)
+		apiGroup.DELETE("/stock/v1/agent/chat/sessions/:sessionId", handlers.DeleteChatSession)
+
+		// Portfolio
+		apiGroup.POST("/stock/v1/portfolio/accounts", handlers.CreatePortfolioAccount)
+		apiGroup.GET("/stock/v1/portfolio/accounts", handlers.ListPortfolioAccounts)
+		apiGroup.POST("/stock/v1/portfolio/trades", handlers.RecordPortfolioTrade)
+		apiGroup.GET("/stock/v1/portfolio/snapshot", handlers.GetPortfolioSnapshot)
+
+		// Backtest
+		apiGroup.POST("/stock/v1/backtest/run", handlers.RunBacktest)
+		apiGroup.GET("/stock/v1/backtest/results", handlers.GetBacktestResults)
+		apiGroup.GET("/stock/v1/backtest/performance", handlers.GetBacktestPerformance)
+
+		// System Config
+		apiGroup.GET("/stock/v1/system/config", handlers.GetSystemStockConfig)
+		apiGroup.PUT("/stock/v1/system/config", handlers.UpdateSystemStockConfig)
 	}
 
 	// 启动周报自动生成定时任务

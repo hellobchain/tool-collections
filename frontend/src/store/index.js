@@ -4,6 +4,7 @@ import auth from './auth'
 import weekly from './weekly'
 import ui from './ui'
 import contract from './contract'
+import stock from './stock'
 
 Vue.use(Vuex)
 
@@ -12,6 +13,7 @@ export default new Vuex.Store({
     auth,
     weekly,
     ui,
-    contract
+    contract,
+    stock
   }
 })

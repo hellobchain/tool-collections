@@ -60,6 +60,33 @@ const router = new Router({
           path: '/contract-extract-history',
           name: 'ContractExtractHistory',
           component: () => import('@/views/ContractExtractHistory.vue')
+        },
+
+        // Stock Analysis
+        {
+          path: '/stock-analysis',
+          name: 'StockAnalysis',
+          component: () => import('@/views/StockAnalysis.vue')
+        },
+        {
+          path: '/stock-agent',
+          name: 'AgentChat',
+          component: () => import('@/views/AgentChat.vue')
+        },
+        {
+          path: '/market-review',
+          name: 'MarketReview',
+          component: () => import('@/views/MarketReview.vue')
+        },
+        {
+          path: '/portfolio',
+          name: 'Portfolio',
+          component: () => import('@/views/Portfolio.vue')
+        },
+        {
+          path: '/backtest',
+          name: 'Backtest',
+          component: () => import('@/views/Backtest.vue')
         }
       ]
     }
